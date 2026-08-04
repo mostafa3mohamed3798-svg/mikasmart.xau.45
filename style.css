@@ -1,0 +1,57 @@
+body {
+    margin: 0;
+    padding: 0;
+    background: #0d1117;
+    font-family: Arial, sans-serif;
+    color: white;
+}
+
+.container {
+    max-width: 400px;
+    margin: 50px auto;
+    background: #161b22;
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+}
+
+h1 {
+    color: #00ff99;
+    margin-bottom: 10px;
+}
+
+h2 {
+    color: white;
+    margin-bottom: 20px;
+}
+
+.price {
+    font-size: 24px;
+    margin: 20px 0;
+    font-weight: bold;
+}
+
+.signal {
+    font-size: 22px;
+    margin: 20px 0;
+    color: #00ff99;
+    font-weight: bold;
+}
+
+button {
+    width: 100%;
+    padding: 15px;
+    font-size: 18px;
+    border: none;
+    border-radius: 10px;
+    background: #00ff99;
+    color: #111;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #00cc77;
+}
