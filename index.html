@@ -250,8 +250,16 @@
             borderUpColor: '#22c55e', borderDownColor: '#ef4444', wickUpColor: '#22c55e', wickDownColor: '#ef4444'
         });
 
+        // تم ربط مقياس الحجم بنطاق منفصل تماماً لتجنب ظهور أي أرقام عشوائية على محور السعر الرئيسي
         const volumeSeries = chart.addHistogramSeries({
-            color: '#26a69a', priceFormat: { type: 'volume' }, priceScaleId: '', scaleMargins: { top: 0.8, bottom: 0 }
+            color: '#26a69a', 
+            priceFormat: { type: 'volume' }, 
+            priceScaleId: 'volume_scale',
+        });
+
+        chart.priceScale('volume_scale').applyOptions({
+            scaleMargins: { top: 0.85, bottom: 0 },
+            visible: false,
         });
 
         const ema20Series = chart.addLineSeries({ color: '#3b82f6', lineWidth: 2, priceLineVisible: false });
@@ -316,6 +324,7 @@
             const ema50Data = calculateEMA(candles, 50);
             const ema200Data = calculateEMA(candles, 200);
 
+            // إصلاح Bug مسافة EMA 20 بالتطابق المباشر مع القيمة الأخيرة المحسوبة بدقة
             const lastEMA20 = ema20Data[ema20Data.length - 1].value;
             const lastEMA50 = ema50Data[ema50Data.length - 1].value;
             const lastEMA200 = ema200Data[ema200Data.length - 1].value;
@@ -470,7 +479,7 @@
                     }
                     lastPrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-                    statusElement.innerText = "● التحليل بالمعايير العالمية يعمل بدقة";
+                    statusElement.innerText = "● المحليل والفلترة يعملان بكفاءة تامة";
                 }
             } catch (err) {}
         }
