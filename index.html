@@ -192,10 +192,10 @@
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● محرك التناغم والتكامل المتطوّر مفعل...</div>
+        <div id="status" class="status-badge">● محرك التكامل وهيمنة الشموع مفعل...</div>
         
         <div class="signal-container">
-            <span id="signalTag" class="signal-tag signal-wait">🛡️ WAITING FOR COMPLETE CONFLUENCE...</span>
+            <span id="signalTag" class="signal-tag signal-wait">🛡️ WAITING FOR HARMONY...</span>
             <span class="signal-power">التناغم: <strong id="signalPower" style="color: #fff;">0%</strong></span>
         </div>
 
@@ -207,7 +207,7 @@
 
         <div class="trade-action-box">
             <button id="executeBtn" class="execute-btn" disabled onclick="executeOrder()">
-                🛡️ في انتظار تكامل المؤشرات (لا توجد صفقة)
+                🛡️ في انتظار تكامل المؤشرات والشمعة
             </button>
         </div>
     </div>
@@ -229,10 +229,25 @@
             <div class="filter-label">🎯 RSI / STOCHASTIC</div>
             <div id="rsiStochVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
+        
+        <div class="filter-card" style="grid-column: span 2;">
+            <div class="filter-label" style="display: flex; justify-content: space-between;">
+                <span>🕯️ نسب الشمعة الحالية (Live Candle Power)</span>
+                <span id="candleTimer" style="color: #3b82f6;">--</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: bold; margin: 6px 0 4px 0;">
+                <span id="bullishPercentText" style="color: #22c55e;">صعود: 50%</span>
+                <span id="bearishPercentText" style="color: #ef4444;">هبوط: 50%</span>
+            </div>
+            <div style="width: 100%; background: #1e293b; height: 8px; border-radius: 4px; overflow: hidden; display: flex;">
+                <div id="bullishBar" style="width: 50%; background: #22c55e; transition: width 0.3s ease;"></div>
+                <div id="bearishBar" style="width: 50%; background: #ef4444; transition: width 0.3s ease;"></div>
+            </div>
+        </div>
+
         <div class="filter-card">
             <div class="filter-label">🛡️ SCALPING S/R ZONES</div>
             <div id="srRetestVal" class="filter-value" style="color: #94a3b8;">--</div>
-            <div style="font-size: 0.60rem; color: #64748b; margin-top: 3px;">(آخر 35 شمعة)</div>
         </div>
         <div class="filter-card">
             <div class="filter-label">💧 VOLUME FILTER</div>
@@ -259,7 +274,7 @@
             <div id="chart"></div>
         </div>
     </div>
-        <script>
+       <script>
         const priceElement = document.getElementById('price');
         const statusElement = document.getElementById('status');
         const signalTagElement = document.getElementById('signalTag');
@@ -275,7 +290,12 @@
         const atrFilterVal = document.getElementById('atrFilterVal');
         const rsiStochVal = document.getElementById('rsiStochVal');
         const srRetestVal = document.getElementById('srRetestVal');
-        const volNewsVal = document.getElementById('volNewsVal');
+        
+        const bullishPercentText = document.getElementById('bullishPercentText');
+        const bearishPercentText = document.getElementById('bearishPercentText');
+        const bullishBar = document.getElementById('bullishBar');
+        const bearishBar = document.getElementById('bearishBar');
+        const candleTimer = document.getElementById('candleTimer');
         
         let lastLivePrice = 0;
         let currentTimeframe = '15';
@@ -414,6 +434,39 @@
             fixedResistance = Math.max(...historicalSlice.map(c => c.high));
         }
 
+        function analyzeCurrentCandle(candles, activePrice) {
+            if (candles.length === 0) return { bullPct: 50, bearPct: 50 };
+            
+            const currentCandle = candles[candles.length - 1];
+            const high = currentCandle.high;
+            const low = currentCandle.low;
+            
+            const totalRange = high - low;
+            if (totalRange <= 0) return { bullPct: 50, bearPct: 50 };
+
+            const distanceFromLow = activePrice - low;
+            let bullPct = (distanceFromLow / totalRange) * 100;
+            bullPct = Math.max(0, Math.min(100, bullPct));
+            let bearPct = 100 - bullPct;
+
+            bullishPercentText.innerText = `صعود: ${bullPct.toFixed(1)}%`;
+            bearishPercentText.innerText = `هبوط: ${bearPct.toFixed(1)}%`;
+            bullishBar.style.width = `${bullPct}%`;
+            bearishBar.style.width = `${bearPct}%`;
+
+            const tfMinutes = parseInt(currentTimeframe) || 15;
+            const now = Math.floor(Date.now() / 1000);
+            const elapsedSeconds = now - currentCandle.time;
+            const totalSeconds = tfMinutes * 60;
+            const remainingSeconds = Math.max(0, totalSeconds - elapsedSeconds);
+            
+            const remMin = Math.floor(remainingSeconds / 60);
+            const remSec = remainingSeconds % 60;
+            candleTimer.innerText = `إغلاق الشمعة: ${remMin}:${remSec < 10 ? '0' : ''}${remSec}`;
+
+            return { bullPct, bearPct };
+        }
+
         function analyzeMarket(candles, rawVolumeData) {
             if (candles.length < 200) return;
 
@@ -430,12 +483,12 @@
             const stochK = calculateStochastic(candles, 14);
             const atrVal = calculateATR(candles, 14);
             const macdObj = calculateMACD(candles);
+            const candlePower = analyzeCurrentCandle(candles, activePrice);
 
             const vwapDiffPercent = Math.abs((activePrice - lastVWAP) / lastVWAP) * 100;
             let vwapStatusText = activePrice >= lastVWAP ? 'BULLISH 🟢' : 'BEARISH 🔴';
-            if (vwapDiffPercent > 1.5) {
-                vwapStatusText += ' ⚠️ EXTENDED';
-            }
+            if (vwapDiffPercent > 1.5) vwapStatusText += ' ⚠️ EXTENDED';
+            
             vwapFilterVal.innerHTML = `<span dir="ltr">$${lastVWAP.toFixed(1)}</span> (${vwapStatusText})`;
             vwapFilterVal.style.color = activePrice >= lastVWAP ? "#22c55e" : "#ef4444";
 
@@ -451,18 +504,12 @@
             srRetestVal.innerHTML = `<span dir="ltr">S: $${fixedSupport.toFixed(1)}</span> | <span dir="ltr">R: $${fixedResistance.toFixed(1)}</span>`;
             srRetestVal.style.color = "#3b82f6";
 
-            // ==========================================
-            // منطق التكامل التام (Confluence Engine)
-            // ==========================================
             let isVwapBullish = activePrice >= lastVWAP;
             let isMacdBullish = macdObj.macd > macdObj.signal;
-            let isNotExtended = vwapDiffPercent <= 1.5; // منع الشراء أو البيع لو السعر طائر بعيداً عن المتوسط
+            let isNotExtended = vwapDiffPercent <= 1.5;
 
-            // شروط الصعود المتكاملة: يجب أن يتفق VWAP و MACD وألا يكون السعر ممتداً بشكل مبالغ فيه
-            let buyConfluence = isVwapBullish && isMacdBullish && isNotExtended && (rsiVal >= 45 && rsiVal <= 70) && (stochK >= 35 && stochK <= 85);
-            
-            // شروط الهبوط المتكاملة: يجب أن يتفق الاثنين سلباً وألا يكون السعر ممتداً هبوطياً بشكل مبالغ فيه
-            let sellConfluence = !isVwapBullish && !isMacdBullish && isNotExtended && (rsiVal <= 55 && rsiVal >= 30) && (stochK <= 65 && stochK >= 15);
+            let buyConfluence = isVwapBullish && isMacdBullish && isNotExtended && (candlePower.bullPct >= 55) && (rsiVal >= 45 && rsiVal <= 70);
+            let sellConfluence = !isVwapBullish && !isMacdBullish && isNotExtended && (candlePower.bearPct >= 55) && (rsiVal <= 55 && rsiVal >= 30);
 
             let signalText = "";
             let signalClass = "";
@@ -470,11 +517,10 @@
             let sl = "---", tp1 = "---", tp2 = "---";
 
             if (buyConfluence) {
-                // حساب نسبة الثقة بناءً على جودة تقارب المؤشرات
-                confidenceScore = Math.min(92, 75 + Math.round((rsiVal > 50 ? rsiVal - 50 : 50 - rsiVal) / 2));
-                const isStrong = confidenceScore >= 82;
+                confidenceScore = Math.min(95, 75 + Math.round(candlePower.bullPct / 5));
+                const isStrong = confidenceScore >= 85;
 
-                signalText = isStrong ? `🟢 [إشارة متكاملة وقوية] صعود (BUY)` : `🟡 [إشارة تكامل جيدة] صعود (BUY)`;
+                signalText = isStrong ? `🟢 [شمعة متكاملة وقوية] صعود (BUY)` : `🟡 [إشارة صعود جيدة] (BUY)`;
                 signalClass = isStrong ? "signal-strong" : "signal-good";
 
                 const slPrice = activePrice - (atrVal * 1.2);
@@ -489,13 +535,13 @@
                 
                 executeBtn.disabled = false;
                 executeBtn.className = `execute-btn ${isStrong ? 'strong-buy-active' : 'good-active'}`;
-                executeBtn.innerHTML = isStrong ? `🚀 تنفيذ شراء متكامل (BUY) - ثقة <span dir="ltr">${confidenceScore}%</span>` : `⚠️ تنفيذ شراء (BUY) - ثقة <span dir="ltr">${confidenceScore}%</span>`;
+                executeBtn.innerHTML = `🚀 تنفيذ شراء (BUY) - ثقة <span dir="ltr">${confidenceScore}%</span>`;
 
             } else if (sellConfluence) {
-                confidenceScore = Math.min(92, 75 + Math.round((rsiVal < 50 ? 50 - rsiVal : rsiVal - 50) / 2));
-                const isStrong = confidenceScore >= 82;
+                confidenceScore = Math.min(95, 75 + Math.round(candlePower.bearPct / 5));
+                const isStrong = confidenceScore >= 85;
 
-                signalText = isStrong ? `🔴 [إشارة متكاملة وقوية] هبوط (SELL)` : `🟡 [إشارة تكامل جيدة] هبوط (SELL)`;
+                signalText = isStrong ? `🔴 [شمعة متكاملة وقوية] هبوط (SELL)` : `🟡 [إشارة هبوط جيدة] (SELL)`;
                 signalClass = isStrong ? "signal-strong-sell" : "signal-good";
 
                 const slPrice = activePrice + (atrVal * 1.2);
@@ -510,14 +556,13 @@
                 
                 executeBtn.disabled = false;
                 executeBtn.className = `execute-btn ${isStrong ? 'strong-sell-active' : 'good-active'}`;
-                executeBtn.innerHTML = isStrong ? `💥 تنفيذ بيع متكامل (SELL) - ثقة <span dir="ltr">${confidenceScore}%</span>` : `⚠️ تنفيذ بيع (SELL) - ثقة <span dir="ltr">${confidenceScore}%</span>`;
+                executeBtn.innerHTML = `💥 تنفيذ بيع (SELL) - ثقة <span dir="ltr">${confidenceScore}%</span>`;
 
             } else {
-                // في حال التناقض أو التذبذب (مثل الصورة السابقة: VWAP صاعد و MACD هابط) يغلق الإشارة فوراً
                 currentTradeSetup = null;
                 executeBtn.disabled = true;
                 executeBtn.className = "execute-btn";
-                executeBtn.innerHTML = `🛡️ المؤشرات متناقضة / سوق متذبذب (موقوف)`;
+                executeBtn.innerHTML = `🛡️ المؤشرات متناقضة أو الشمعة متذبذبة (موقوف)`;
                 
                 signalText = "🛡️ CONFLICT DETECTED / WAITING HARMONY...";
                 signalClass = "signal-wait";
