@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold - Absolute Sync Engine V3</title>
+    <title>Mika Pro Gold - High Precision EMA 50 Engine</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,13 +29,13 @@
             margin-bottom: 12px; 
         }
         
-        .header-title { font-size: 1.2rem; font-weight: bold; color: #f59e0b; margin-bottom: 4px; }
+        .header-title { font-size: 1.2rem; font-weight: bold; color: #3b82f6; margin-bottom: 4px; }
         .symbol-name { font-size: 0.85rem; color: #94a3b8; margin-bottom: 8px; }
         
         .price-display { 
             font-size: 2.7rem; 
             font-weight: 800; 
-            color: #f59e0b; 
+            color: #3b82f6; 
             letter-spacing: 1px; 
             margin: 4px 0; 
             line-height: 1; 
@@ -74,7 +74,7 @@
             border: 1px solid #1e293b;
             font-size: 0.85rem;
         }
-        .target-item span { color: #f59e0b; font-weight: bold; }
+        .target-item span { color: #3b82f6; font-weight: bold; }
 
         .trade-action-box {
             width: 100%;
@@ -164,8 +164,8 @@
             cursor: pointer;
         }
 
-        .tf-btn.active { background: #f59e0b; color: #0b0f19; border-color: #f59e0b; }
-        .btn-ema.active { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border-color: #f59e0b; }
+        .tf-btn.active { background: #3b82f6; color: #0b0f19; border-color: #3b82f6; }
+        .btn-ema.active { background: rgba(59, 130, 246, 0.2); color: #3b82f6; border-color: #3b82f6; }
         .btn-vol.active { background: rgba(16, 185, 129, 0.2); color: #10b981; border-color: #10b981; }
 
         .chart-container { 
@@ -183,15 +183,15 @@
 <body>
 
     <div class="top-price-card">
-        <div class="header-title">🤖 Mika Pro Gold - Absolute Sync V3</div>
+        <div class="header-title">🤖 Mika Pro Gold - High Precision Engine</div>
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● محرك التطابق البصري نشط...</div>
+        <div id="status" class="status-badge">● نظام تحليل الثقة المحسن نشط...</div>
         
         <div class="signal-container">
             <span id="signalTag" class="signal-tag signal-wait">⚪ ANALYZING MARKET...</span>
-            <span class="signal-power">نسبة الثقة المركبة: <strong id="signalPower" style="color: #fff;">0%</strong></span>
+            <span class="signal-power">نسبة الثقة المحسوبة: <strong id="signalPower" style="color: #fff;">0%</strong></span>
         </div>
 
         <div class="targets-box">
@@ -202,7 +202,7 @@
 
         <div class="trade-action-box">
             <button id="executeBtn" class="execute-btn" disabled onclick="executeOrder()">
-                ⏳ بانتظار إشارة فنية مؤكدة...
+                ⏳ بانتظار إشارة فنية عالية الدقة...
             </button>
         </div>
     </div>
@@ -217,7 +217,7 @@
             <div id="stochFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">📏 EXACT DISTANCE FROM EMA 20</div>
+            <div class="filter-label">📏 EXACT DISTANCE FROM EMA 50</div>
             <div id="emaDistVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
@@ -300,20 +300,16 @@
             scaleMargins: { top: 0.8, bottom: 0 },
         });
 
-        // 🎨 [تصحيح جذري للألوان]: جعل EMA 20 باللون الأصفر المميز لتتطابق تماماً بصرياً وبرمجياً
-        const ema20Series = chart.addLineSeries({ color: '#f59e0b', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
-        const ema50Series = chart.addLineSeries({ color: '#3b82f6', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+        const ema20Series = chart.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
+        const ema50Series = chart.addLineSeries({ color: '#3b82f6', lineWidth: 2.5, priceLineVisible: false, lastValueVisible: false });
         const ema200Series = chart.addLineSeries({ color: '#ec4899', lineWidth: 3, priceLineVisible: false, lastValueVisible: false });
 
         function calculateEMA(candles, period) {
             if (candles.length < period) return [];
             let emaData = [];
             const k = 2 / (period + 1);
-            
             let sum = 0;
-            for (let i = 0; i < period; i++) {
-                sum += candles[i].close;
-            }
+            for (let i = 0; i < period; i++) sum += candles[i].close;
             let prevEMA = sum / period;
             emaData.push({ time: candles[period - 1].time, value: prevEMA });
             
@@ -373,12 +369,11 @@
             const lastEMA50 = ema50Data[ema50Data.length - 1].value;
             const lastEMA200 = ema200Data[ema200Data.length - 1].value;
 
-            const distFromEMA20 = lastClose - lastEMA20;
-            const pctDist = (distFromEMA20 / lastEMA20) * 100;
+            const distFromEMA50 = lastClose - lastEMA50;
+            const pctDist = (distFromEMA50 / lastEMA50) * 100;
 
-            // تحديث العرض الرقمي ليتطابق مع القيمة الفعلية للخط الأصفر الجديد
-            emaDistVal.innerText = `${distFromEMA20 > 0 ? '+' : ''}${distFromEMA20.toFixed(2)}$ (${pctDist.toFixed(2)}%)`;
-            emaDistVal.style.color = Math.abs(pctDist) <= 0.6 ? "#22c55e" : "#f59e0b";
+            emaDistVal.innerText = `${distFromEMA50 > 0 ? '+' : ''}${distFromEMA50.toFixed(2)}$ (${pctDist.toFixed(2)}%)`;
+            emaDistVal.style.color = Math.abs(pctDist) <= 0.8 ? "#22c55e" : "#3b82f6";
 
             const rsiVal = calculateRSI(candles, 14);
             const stochK = calculateStochastic(candles, 14);
@@ -392,16 +387,16 @@
             const recentVols = rawVolumeData.slice(-20);
             const avgVol = recentVols.reduce((acc, curr) => acc + curr.value, 0) / 20;
             const lastVol = rawVolumeData[rawVolumeData.length - 1].value;
-            const hasGoodVolume = lastVol >= avgVol * 0.70;
+            const hasGoodVolume = lastVol >= avgVol * 0.80;
 
-            volNewsVal.innerText = `VOL: ${lastVol.toFixed(0)} (${hasGoodVolume ? 'GOOD 🟢' : 'LOW ⚠️'})`;
+            volNewsVal.innerText = `VOL: ${lastVol.toFixed(0)} (${hasGoodVolume ? 'HIGH 🟢' : 'LOW ⚠️'})`;
             volNewsVal.style.color = hasGoodVolume ? "#22c55e" : "#ef4444";
 
             const recentSlice = candles.slice(-30);
             const supportLevel = Math.min(...recentSlice.map(c => c.low));
             const resistanceLevel = Math.max(...recentSlice.map(c => c.high));
-            const nearSupport = Math.abs(lastClose - supportLevel) < 8.0;
-            const nearResistance = Math.abs(lastClose - resistanceLevel) < 8.0;
+            const nearSupport = Math.abs(lastClose - supportLevel) < 6.0;
+            const nearResistance = Math.abs(lastClose - resistanceLevel) < 6.0;
 
             srRetestVal.innerText = nearSupport ? "NEAR SUPPORT 🟢" : (nearResistance ? "NEAR RESISTANCE 🔴" : "MID-RANGE ⚖️");
             srRetestVal.style.color = nearSupport ? "#22c55e" : (nearResistance ? "#ef4444" : "#94a3b8");
@@ -414,29 +409,31 @@
 
             let signalText = "⚪ WAITING FOR STRONG SETUP...";
             let signalClass = "signal-wait";
-            let realPower = 35; 
+            let confidenceScore = 0; 
             let sl = "---", tp1 = "---", tp2 = "---";
 
             const isSellOpportunity = (rsiVal >= 58 && stochK >= 60);
             const isBuyOpportunity = (rsiVal <= 42 && stochK <= 40);
 
             if (isSellOpportunity) {
-                realPower = 55;
-                if (rsiVal >= 65) realPower += 15;
-                if (stochK >= 75) realPower += 10;
-                if (nearResistance) realPower += 10;
+                confidenceScore = 40; 
+                if (rsiVal >= 65) confidenceScore += 15;
+                if (stochK >= 75) confidenceScore += 15;
+                if (nearResistance) confidenceScore += 15;
+                if (hasGoodVolume) confidenceScore += 10;
+                if (isBearishTrend) confidenceScore += 5; 
 
-                if (!hasGoodVolume) realPower -= 15;
-                if (isBullishTrend) realPower -= 15;
+                if (isBullishTrend) confidenceScore -= 20;
+                if (!hasGoodVolume) confidenceScore -= 10;
 
-                realPower = Math.max(25, Math.min(realPower, 92));
+                confidenceScore = Math.max(20, Math.min(confidenceScore, 96));
 
                 signalText = "🔴 SELL SIGNAL (SHORT)";
                 signalClass = "signal-sell";
 
-                const slPrice = lastClose + 6.0;
-                const tp1Price = lastClose - 8.5;
-                const tp2Price = lastClose - 16.0;
+                const slPrice = lastClose + 5.5;
+                const tp1Price = lastClose - 8.0;
+                const tp2Price = lastClose - 15.0;
 
                 sl = slPrice.toFixed(2);
                 tp1 = tp1Price.toFixed(2);
@@ -446,25 +443,27 @@
                 
                 executeBtn.disabled = false;
                 executeBtn.className = "execute-btn sell-active";
-                executeBtn.innerText = `📉 تنفيذ صفقة بيع (SELL) مؤكدة عند $${lastClose.toFixed(2)}`;
+                executeBtn.innerText = `📉 تنفيذ صفقة بيع (SELL) - ثقة ${confidenceScore}%`;
 
             } else if (isBuyOpportunity) {
-                realPower = 55;
-                if (rsiVal <= 35) realPower += 15;
-                if (stochK <= 25) realPower += 10;
-                if (nearSupport) realPower += 10;
+                confidenceScore = 40;
+                if (rsiVal <= 35) confidenceScore += 15;
+                if (stochK <= 25) confidenceScore += 15;
+                if (nearSupport) confidenceScore += 15;
+                if (hasGoodVolume) confidenceScore += 10;
+                if (isBullishTrend) confidenceScore += 5;
 
-                if (!hasGoodVolume) realPower -= 15;
-                if (isBearishTrend) realPower -= 15;
+                if (isBearishTrend) confidenceScore -= 20;
+                if (!hasGoodVolume) confidenceScore -= 10;
 
-                realPower = Math.max(25, Math.min(realPower, 92));
+                confidenceScore = Math.max(20, Math.min(confidenceScore, 96));
 
                 signalText = "🟢 BUY SIGNAL (LONG)";
                 signalClass = "signal-buy";
 
-                const slPrice = lastClose - 6.0;
-                const tp1Price = lastClose + 8.5;
-                const tp2Price = lastClose + 16.0;
+                const slPrice = lastClose - 5.5;
+                const tp1Price = lastClose + 8.0;
+                const tp2Price = lastClose + 15.0;
 
                 sl = slPrice.toFixed(2);
                 tp1 = tp1Price.toFixed(2);
@@ -474,18 +473,18 @@
                 
                 executeBtn.disabled = false;
                 executeBtn.className = "execute-btn buy-active";
-                executeBtn.innerText = `📈 تنفيذ صفقة شراء (BUY) مؤكدة عند $${lastClose.toFixed(2)}`;
+                executeBtn.innerText = `📈 تنفيذ صفقة شراء (BUY) - ثقة ${confidenceScore}%`;
 
             } else {
                 currentTradeSetup = null;
                 executeBtn.disabled = true;
                 executeBtn.className = "execute-btn";
-                executeBtn.innerText = "⏳ بانتظار توافق إضافي للمؤشرات...";
+                executeBtn.innerText = "⏳ بانتظار إشارة فنية عالية الدقة...";
             }
 
             signalTagElement.innerText = signalText;
             signalTagElement.className = `signal-tag ${signalClass}`;
-            signalPowerElement.innerText = `${realPower}%`;
+            signalPowerElement.innerText = `${confidenceScore}%`;
 
             slValElement.innerText = sl !== "---" ? `$${sl}` : "---";
             tp1ValElement.innerText = tp1 !== "---" ? `$${tp1}` : "---";
@@ -557,11 +556,11 @@
                 if (data && data.retCode === 0 && data.result && data.result.list.length > 0) {
                     const rawPrice = parseFloat(data.result.list[0].lastPrice);
                     if (lastPrice > 0) {
-                        priceElement.style.color = rawPrice > lastPrice ? '#22c55e' : (rawPrice < lastPrice ? '#ef4444' : '#f59e0b');
+                        priceElement.style.color = rawPrice > lastPrice ? '#22c55e' : (rawPrice < lastPrice ? '#ef4444' : '#3b82f6');
                     }
                     lastPrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-                    statusElement.innerText = "● مطابقة تامة بين الخط الأصفر وسعر الشارت";
+                    statusElement.innerText = "● محرك الثقة الفني يعمل بكفاءة ودقة عالية";
                 }
             } catch (err) {}
         }
