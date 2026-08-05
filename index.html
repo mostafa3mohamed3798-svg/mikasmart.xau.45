@@ -192,11 +192,11 @@
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● محرك التكامل وهيمنة الشموع مفعل...</div>
+        <div id="status" class="status-badge">● محرك العزم وهيمنة الشموع مفعل...</div>
         
         <div class="signal-container">
-            <span id="signalTag" class="signal-tag signal-wait">🛡️ WAITING FOR HARMONY...</span>
-            <span class="signal-power">التناغم: <strong id="signalPower" style="color: #fff;">0%</strong></span>
+            <span id="signalTag" class="signal-tag signal-wait">🛡️ WAITING FOR MOMENTUM...</span>
+            <span class="signal-power">عزم الشمعة: <strong id="signalPower" style="color: #fff;">0%</strong></span>
         </div>
 
         <div class="targets-box">
@@ -207,7 +207,7 @@
 
         <div class="trade-action-box">
             <button id="executeBtn" class="execute-btn" disabled onclick="executeOrder()">
-                🛡️ في انتظار تكامل المؤشرات والشمعة
+                🛡️ في انتظار وضوح السيولة
             </button>
         </div>
     </div>
@@ -274,7 +274,7 @@
             <div id="chart"></div>
         </div>
     </div>
-       <script>
+        <script>
         const priceElement = document.getElementById('price');
         const statusElement = document.getElementById('status');
         const signalTagElement = document.getElementById('signalTag');
@@ -492,8 +492,8 @@
             vwapFilterVal.innerHTML = `<span dir="ltr">$${lastVWAP.toFixed(1)}</span> (${vwapStatusText})`;
             vwapFilterVal.style.color = activePrice >= lastVWAP ? "#22c55e" : "#ef4444";
 
-            macdFilterVal.innerHTML = `MACD: <span dir="ltr">${macdObj.macd > macdObj.signal ? 'BULLISH 🚀' : 'BEARISH 💥'}</span>`;
-            macdFilterVal.style.color = macdObj.macd > macdObj.signal ? "#22c55e" : "#ef4444";
+            macdFilterVal.innerHTML = `MACD: <span dir="ltr">${macdObj.macd >= macdObj.signal ? 'BULLISH 🚀' : 'BEARISH 💥'}</span>`;
+            macdFilterVal.style.color = macdObj.macd >= macdObj.signal ? "#22c55e" : "#ef4444";
 
             atrFilterVal.innerHTML = `<span dir="ltr">ATR: $${atrVal.toFixed(2)}</span>`;
             atrFilterVal.style.color = "#3b82f6";
@@ -504,12 +504,12 @@
             srRetestVal.innerHTML = `<span dir="ltr">S: $${fixedSupport.toFixed(1)}</span> | <span dir="ltr">R: $${fixedResistance.toFixed(1)}</span>`;
             srRetestVal.style.color = "#3b82f6";
 
+            // شروط مرنة وسريعة لإعطاء الإشارات بنجاح
             let isVwapBullish = activePrice >= lastVWAP;
-            let isMacdBullish = macdObj.macd > macdObj.signal;
-            let isNotExtended = vwapDiffPercent <= 1.5;
+            let isMacdBullish = macdObj.macd >= macdObj.signal;
 
-            let buyConfluence = isVwapBullish && isMacdBullish && isNotExtended && (candlePower.bullPct >= 55) && (rsiVal >= 45 && rsiVal <= 70);
-            let sellConfluence = !isVwapBullish && !isMacdBullish && isNotExtended && (candlePower.bearPct >= 55) && (rsiVal <= 55 && rsiVal >= 30);
+            let buyConfluence = isVwapBullish && isMacdBullish && (candlePower.bullPct >= 51) && (rsiVal >= 40 && rsiVal <= 75);
+            let sellConfluence = !isVwapBullish && !isMacdBullish && (candlePower.bearPct >= 51) && (rsiVal <= 60 && rsiVal >= 25);
 
             let signalText = "";
             let signalClass = "";
@@ -517,15 +517,15 @@
             let sl = "---", tp1 = "---", tp2 = "---";
 
             if (buyConfluence) {
-                confidenceScore = Math.min(95, 75 + Math.round(candlePower.bullPct / 5));
-                const isStrong = confidenceScore >= 85;
+                confidenceScore = Math.min(95, 70 + Math.round(candlePower.bullPct / 3));
+                const isStrong = confidenceScore >= 80;
 
-                signalText = isStrong ? `🟢 [شمعة متكاملة وقوية] صعود (BUY)` : `🟡 [إشارة صعود جيدة] (BUY)`;
+                signalText = isStrong ? `🟢 [إشارة قوية جداً] صعود (BUY)` : `🟡 [إشارة صعود جيدة] (BUY)`;
                 signalClass = isStrong ? "signal-strong" : "signal-good";
 
-                const slPrice = activePrice - (atrVal * 1.2);
-                const tp1Price = activePrice + (atrVal * 1.8);
-                const tp2Price = activePrice + (atrVal * 3.2);
+                const slPrice = activePrice - (atrVal * 1.0);
+                const tp1Price = activePrice + (atrVal * 1.5);
+                const tp2Price = activePrice + (atrVal * 2.5);
 
                 sl = slPrice.toFixed(2);
                 tp1 = tp1Price.toFixed(2);
@@ -538,15 +538,15 @@
                 executeBtn.innerHTML = `🚀 تنفيذ شراء (BUY) - ثقة <span dir="ltr">${confidenceScore}%</span>`;
 
             } else if (sellConfluence) {
-                confidenceScore = Math.min(95, 75 + Math.round(candlePower.bearPct / 5));
-                const isStrong = confidenceScore >= 85;
+                confidenceScore = Math.min(95, 70 + Math.round(candlePower.bearPct / 3));
+                const isStrong = confidenceScore >= 80;
 
-                signalText = isStrong ? `🔴 [شمعة متكاملة وقوية] هبوط (SELL)` : `🟡 [إشارة هبوط جيدة] (SELL)`;
+                signalText = isStrong ? `🔴 [إشارة قوية جداً] هبوط (SELL)` : `🟡 [إشارة هبوط جيدة] (SELL)`;
                 signalClass = isStrong ? "signal-strong-sell" : "signal-good";
 
-                const slPrice = activePrice + (atrVal * 1.2);
-                const tp1Price = activePrice - (atrVal * 1.8);
-                const tp2Price = activePrice - (atrVal * 3.2);
+                const slPrice = activePrice + (atrVal * 1.0);
+                const tp1Price = activePrice - (atrVal * 1.5);
+                const tp2Price = activePrice - (atrVal * 2.5);
 
                 sl = slPrice.toFixed(2);
                 tp1 = tp1Price.toFixed(2);
@@ -562,11 +562,12 @@
                 currentTradeSetup = null;
                 executeBtn.disabled = true;
                 executeBtn.className = "execute-btn";
-                executeBtn.innerHTML = `🛡️ المؤشرات متناقضة أو الشمعة متذبذبة (موقوف)`;
+                executeBtn.innerHTML = `🛡️ السوق في منطقة تذبذب (في انتظار سيطرة واضحة)`;
                 
-                signalText = "🛡️ CONFLICT DETECTED / WAITING HARMONY...";
+                signalText = "🛡️ WAITING FOR CLEAR MOMENTUM...";
                 signalClass = "signal-wait";
-                confidenceScore = 50;
+                // النسبة تتحرك الآن بحسب الشمعة الأقوى ولا تتجمد عند 50%
+                confidenceScore = Math.round(Math.max(candlePower.bullPct, candlePower.bearPct));
             }
 
             signalTagElement.innerHTML = signalText;
