@@ -3,9 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Smart AI - Native Chart</title>
-    <!-- تحميل مكتبة الرسم البياني المباشرة والمفتوحة -->
-    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    <title>Mika Smart AI - Pro Dashboard</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
@@ -56,18 +54,17 @@
         .signal-tag { background-color: rgba(34, 197, 94, 0.15); color: #22c55e; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 0.95rem; }
         .signal-power { color: #94a3b8; font-size: 0.9rem; }
 
-        /* حاوية الشارت المحلي */
+        /* حاوية الشارت الاحترافي */
         .chart-container { 
             background: #151c2c; 
             border-radius: 16px; 
-            padding: 10px; 
+            overflow: hidden;
             width: 100%; 
             max-width: 500px; 
             border: 1px solid #232d42; 
-            height: 420px; 
-            position: relative;
+            height: 480px; 
         }
-        #chart {
+        .tradingview-widget-container {
             width: 100%;
             height: 100%;
         }
@@ -77,7 +74,7 @@
 
     <div class="top-price-card">
         <div class="header-title">🤖 Mika Smart AI</div>
-        <div class="symbol-name">Bybit Futures - XAUUSDT (شارت محلي بدون حظر)</div>
+        <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
         <div id="status" class="status-badge">● جاري الاتصال بالبيانات...</div>
@@ -88,9 +85,27 @@
         </div>
     </div>
 
-    <!-- حاوية الشارت التي سيرسم فيها المتصفح الشموع بنفسه -->
+    <!-- شارت TradingView الاحترافي الأصلي المباشر -->
     <div class="chart-container">
-        <div id="chart"></div>
+        <div class="tradingview-widget-container">
+            <div id="tradingview_pro_chart" style="height:100%;width:100%;"></div>
+            <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+            <script type="text/javascript">
+                new TradingView.widget({
+                    "autosize": true,
+                    "symbol": "BYBIT:XAUUSDT",
+                    "interval": "15",
+                    "timezone": "Etc/UTC",
+                    "theme": "dark",
+                    "style": "1",
+                    "locale": "ar",
+                    "toolbar_bg": "#151c2c",
+                    "enable_publishing": false,
+                    "allow_symbol_change": false,
+                    "container_id": "tradingview_pro_chart"
+                });
+            </script>
+        </div>
     </div>
 
     <script>
@@ -98,57 +113,6 @@
         const statusElement = document.getElementById('status');
         let lastPrice = 0;
 
-        // 1. إنشاء الشارت المحلي باستخدام مكتبة Lightweight Charts
-        const chartContainer = document.getElementById('chart');
-        const chart = LightweightCharts.createChart(chartContainer, {
-            layout: {
-                backgroundColor: '#151c2c',
-                textColor: '#94a3b8',
-            },
-            grid: {
-                vertLines: { color: '#1e293b' },
-                horzLines: { color: '#1e293b' },
-            },
-            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-            priceScale: { borderColor: '#232d42' },
-            timeScale: { borderColor: '#232d42', timeVisible: true, secondsVisible: false },
-        });
-
-        // إضافة سلسلة الشموع اليابانية (Candlestick Series)
-        const candlestickSeries = chart.addCandlestickSeries({
-            upColor: '#22c55e',
-            downColor: '#ef4444',
-            borderVisible: false,
-            wickUpColor: '#22c55e',
-            wickDownColor: '#ef4444',
-        });
-
-        // 2. دالة جلب تاريخ الشموع اليابانية من Bybit ورسمها
-        async function loadChartData() {
-            const klineUrl = 'https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=15&limit=100';
-            try {
-                const response = await fetch(klineUrl);
-                const data = await response.json();
-
-                if (data && data.retCode === 0 && data.result && data.result.list) {
-                    // تحويل بيانات Bybit لنسق الشارت
-                    const formattedData = data.result.list.map(d => ({
-                        time: parseInt(d[0]) / 1000,
-                        open: parseFloat(d[1]),
-                        high: parseFloat(d[2]),
-                        low: parseFloat(d[3]),
-                        close: parseFloat(d[4])
-                    })).reverse();
-
-                    candlestickSeries.setData(formattedData);
-                    chart.timeScale().fitContent();
-                }
-            } catch (err) {
-                console.error("Chart Data Fetch Error:", err);
-            }
-        }
-
-        // 3. دالة جلب السعر الحي وتحديث الشمعة الأخيرة والكارت العلوي
         async function fetchBybitPrice() {
             const tickerUrl = 'https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSDT';
 
@@ -167,21 +131,18 @@
                     lastPrice = rawPrice;
 
                     priceElement.innerText = `$${formattedPrice}`;
-                    statusElement.innerText = "● اتصال حي ومباشر بدون حظر";
+                    statusElement.innerText = "● اتصال حي ومباشر (Bybit API)";
                     statusElement.style.color = "#10b981";
                 }
             } catch (err) {
                 console.error("Price Fetch Error:", err);
-                statusElement.innerText = "⚠️ جاري إعادة محاولة الاتصال...";
+                statusElement.innerText = "⚠️ جاري إعادة الاتصال...";
                 statusElement.style.color = "#f59e0b";
             }
         }
 
-        // تشغيل الجلب التلقائي
-        loadChartData();
         fetchBybitPrice();
-        setInterval(fetchBybitPrice, 1000); // تحديث السعر كل ثانية
-        setInterval(loadChartData, 15000);   // تحديث الشموع كل 15 ثانية
+        setInterval(fetchBybitPrice, 1000);
     </script>
 
 </body>
