@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold Engine - Dynamic Scoring</title>
+    <title>Mika Pro Gold Engine - Realistic Logic</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -153,11 +153,11 @@
 <body>
 
     <div class="top-price-card">
-        <div class="header-title">🤖 Mika Pro Gold Engine - Dynamic Score</div>
+        <div class="header-title">🤖 Mika Pro Gold Engine - Realistic Logic</div>
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● محرك التوافق الديناميكي نشط...</div>
+        <div id="status" class="status-badge">● محرك المنطق الواقعي والتوافق نشط...</div>
         
         <div class="signal-container">
             <span id="signalTag" class="signal-tag signal-wait">⚪ ANALYZING...</span>
@@ -328,13 +328,15 @@
             const lastEMA50 = ema50Data[ema50Data.length - 1].value;
             const lastEMA200 = ema200Data[ema200Data.length - 1].value;
 
+            // حل التضارب الرقمي عبر حساب المسافة بالنسبة المئوية المتناسقة
             const distFromEMA20 = lastClose - lastEMA20;
-            const absDist = Math.abs(distFromEMA20);
+            const pctDist = (distFromEMA20 / lastEMA20) * 100;
 
-            emaDistVal.innerText = `${distFromEMA20 > 0 ? '+' : ''}${distFromEMA20.toFixed(2)}$`;
-            emaDistVal.style.color = absDist <= 8 ? "#22c55e" : "#f59e0b";
+            emaDistVal.innerText = `${distFromEMA20 > 0 ? '+' : ''}${distFromEMA20.toFixed(2)}$ (${pctDist.toFixed(2)}%)`;
+            emaDistVal.style.color = Math.abs(pctDist) <= 0.3 ? "#22c55e" : "#f59e0b";
 
-            const isBullishTrend = lastEMA50 > lastEMA200;
+            // تحديد الترند العام بدقة بناءً على ترتيب المتوسطات (EMA50 و EMA200)
+            const isBullishTrend = lastEMA50 > lastEMA200 && lastClose > lastEMA200;
             emaTrendVal.innerText = isBullishTrend ? "BULLISH TREND 🟢" : "BEARISH TREND 🔴";
             emaTrendVal.style.color = isBullishTrend ? "#22c55e" : "#ef4444";
 
@@ -360,46 +362,45 @@
             const nearSupport = Math.abs(lastClose - supportLevel) < 5.0;
             const nearResistance = Math.abs(lastClose - resistanceLevel) < 5.0;
 
-            srRetestVal.innerText = nearSupport ? "NEAR SUPPORT 🟢" : (nearResistance ? "NEAR RESISTANCE 🔴" : "MID-RANGE ⚖️");
+            srRetestVal.innerText = nearSupport ? "NEAR SUPPORT 🟢" : (nearResistance ? "NEAR Resistance 🔴" : "MID-RANGE ⚖️");
             srRetestVal.style.color = nearSupport ? "#22c55e" : (nearResistance ? "#ef4444" : "#94a3b8");
 
-            // 🧮 حساب درجة التوافق ديناميكياً بناءً على المؤشرات الحقيقية
+            // 🧮 حساب نقاط الشراء والبيع بشكل منفصل
             let buyScore = 0;
             let sellScore = 0;
 
-            // حساب نقاط الشراء
             if (rsiVal < 45) buyScore += 25;
             if (stochK < 35) buyScore += 25;
-            if (isBullishTrend || lastClose >= lastEMA20) buyScore += 20;
-            if (nearSupport || absDist <= 6) buyScore += 15;
-            if (hasGoodVolume) buyScore += 15;
+            if (isBullishTrend) buyScore += 25; // وزن قوي للترند الصاعد
+            if (nearSupport) buyScore += 15;
+            if (hasGoodVolume) buyScore += 10;
 
-            // حساب نقاط البيع
             if (rsiVal > 55) sellScore += 25;
             if (stochK > 65) sellScore += 25;
-            if (!isBullishTrend || lastClose <= lastEMA20) sellScore += 20;
-            if (nearResistance || absDist <= 6) sellScore += 15;
-            if (hasGoodVolume) sellScore += 15;
+            if (!isBullishTrend) sellScore += 25; // وزن قوي للترند الهابط
+            if (nearResistance) sellScore += 15;
+            if (hasGoodVolume) sellScore += 10;
 
             let signalText = "⚪ WAITING / NEUTRAL";
             let signalClass = "signal-wait";
             let power = 50;
             let sl = "---", tp1 = "---", tp2 = "---";
 
-            // شرط إعطاء إشارة الشراء (يتطلب درجة توافق عالية نسبياً لتجنب العشوائية)
-            if (buyScore >= 75 && buyScore > sellScore) {
-                signalText = "🟢 DYNAMIC BUY SIGNAL";
+            // 🛡️ منطق واقعي يمنع التضارب ويصحح النسب المنخفضة عند التعارض
+            if (buyScore >= 70 && buyScore > sellScore) {
+                // إذا كان الترند صاعداً وإشارة الشراء متوافقة -> نسبة ثقة عالية ومنطقية
+                signalText = "🟢 REALISTIC BUY SIGNAL";
                 signalClass = "signal-buy";
-                power = buyScore;
+                power = isBullishTrend ? Math.min(buyScore, 92) : 60; // خصم تلقائي للنسبة إذا حدث تعارض
                 sl = (lastClose - 4.5).toFixed(2);
                 tp1 = (lastClose + 6.0).toFixed(2);
                 tp2 = (lastClose + 12.0).toFixed(2);
             } 
-            // شرط إعطاء إشارة البيع
-            else if (sellScore >= 75 && sellScore > buyScore) {
-                signalText = "🔴 DYNAMIC SELL SIGNAL";
+            else if (sellScore >= 70 && sellScore > buyScore) {
+                // إذا كان الترند العام صاعداً (Bullish) وصدرت إشارة بيع (عكس الترند) -> تصبح النسبة واقعية 55%-65% تفادياً للمبالغة
+                signalText = "🔴 COUNTER-TREND SELL";
                 signalClass = "signal-sell";
-                power = sellScore;
+                power = isBullishTrend ? 58 : Math.min(sellScore, 92); // تصحيح النسبة لمنع المبالغة عند التعارض
                 sl = (lastClose + 4.5).toFixed(2);
                 tp1 = (lastClose - 6.0).toFixed(2);
                 tp2 = (lastClose - 12.0).toFixed(2);
@@ -407,7 +408,7 @@
             else {
                 signalText = "⚪ SCANNING MARKET...";
                 signalClass = "signal-wait";
-                power = Math.max(buyScore, sellScore);
+                power = Math.round((buyScore + sellScore) / 2);
             }
 
             signalTagElement.innerText = signalText;
@@ -476,7 +477,7 @@
                     }
                     lastPrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-                    statusElement.innerText = "● محرك حساب التوافق الديناميكي للشراء والبيع نشط";
+                    statusElement.innerText = "● محرك المنطق الواقعي والتوافق يعمل بكفاءة";
                 }
             } catch (err) {}
         }
