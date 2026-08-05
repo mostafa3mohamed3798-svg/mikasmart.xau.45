@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold - Anti-Choppy Precision Engine</title>
+    <title>Mika Pro Gold - Tiered Scoring Engine</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -59,8 +59,9 @@
             font-weight: bold; 
             font-size: 0.95rem; 
         }
-        .signal-buy { background-color: rgba(34, 197, 94, 0.18); color: #22c55e; border: 1px solid #22c55e; }
-        .signal-sell { background-color: rgba(239, 68, 68, 0.18); color: #ef4444; border: 1px solid #ef4444; }
+        .signal-good { background-color: rgba(234, 179, 8, 0.18); color: #eab308; border: 1px solid #eab308; }
+        .signal-strong { background-color: rgba(34, 197, 94, 0.18); color: #22c55e; border: 1px solid #22c55e; }
+        .signal-strong-sell { background-color: rgba(239, 68, 68, 0.18); color: #ef4444; border: 1px solid #ef4444; }
         .signal-wait { background-color: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid #94a3b8; }
 
         .targets-box {
@@ -91,11 +92,15 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        .execute-btn.buy-active {
+        .execute-btn.good-active {
+            background: linear-gradient(135deg, #eab308, #ca8a04);
+            box-shadow: 0 4px 12px rgba(234, 179, 8, 0.4);
+        }
+        .execute-btn.strong-buy-active {
             background: linear-gradient(135deg, #10b981, #059669);
             box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
         }
-        .execute-btn.sell-active {
+        .execute-btn.strong-sell-active {
             background: linear-gradient(135deg, #ef4444, #dc2626);
             box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
         }
@@ -183,14 +188,14 @@
 <body>
 
     <div class="top-price-card">
-        <div class="header-title">🤖 Mika Pro Gold - Anti-Choppy Engine</div>
+        <div class="header-title">🤖 Mika Pro Gold - Tiered Engine</div>
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● محرك النقاط والترجيح الذكي مفعل...</div>
+        <div id="status" class="status-badge">● محرك التدرج الذكي (70%-100%) مفعل...</div>
         
         <div class="signal-container">
-            <span id="signalTag" class="signal-tag signal-wait">🛡️ WAITING FOR CLEAR SETUP...</span>
+            <span id="signalTag" class="signal-tag signal-wait">🛡️ WAITING FOR 70%+ CONFIDENCE...</span>
             <span class="signal-power">تحليل السوق: <strong id="signalPower" style="color: #fff;">0%</strong></span>
         </div>
 
@@ -202,7 +207,7 @@
 
         <div class="trade-action-box">
             <button id="executeBtn" class="execute-btn" disabled onclick="executeOrder()">
-                🛡️ السوق متذبذب - لا توجد صفقات آمنة حالياً
+                🛡️ الثقة أقل من 70% - لا توجد صفقة حالياً
             </button>
         </div>
     </div>
@@ -406,7 +411,6 @@
             let bullishScore = 0;
             let bearishScore = 0;
 
-            // 1. تقييم الاتجاه بواسطة المتوسطات (وزن 35 درجة)
             if (activePrice > lastEMA50 && lastEMA50 > lastEMA200) {
                 bullishScore += 35;
             } else if (activePrice < lastEMA50 && lastEMA50 < lastEMA200) {
@@ -416,7 +420,6 @@
                 else bearishScore += 15;
             }
 
-            // 2. تقييم مؤشر القوة النسبية RSI (وزن 25 درجة)
             if (rsiVal < 45) {
                 bullishScore += 25;
             } else if (rsiVal > 55) {
@@ -426,7 +429,6 @@
                 bearishScore += 10;
             }
 
-            // 3. تقييم مؤشر الستوكاستيك Stoch %K (وزن 25 درجة)
             if (stochK < 40) {
                 bullishScore += 25;
             } else if (stochK > 60) {
@@ -436,7 +438,6 @@
                 bearishScore += 10;
             }
 
-            // 4. تقييم الفوليوم وحجم التداول (وزن 15 درجة)
             if (hasGoodVolume) {
                 if (activePrice >= candles[candles.length - 2].close) bullishScore += 15;
                 else bearishScore += 15;
@@ -451,53 +452,60 @@
             let confidenceScore = 0;
             let sl = "---", tp1 = "---", tp2 = "---";
 
-            const threshold = 60;
-
-            if (bullPercentage >= threshold) {
+            // المنطق الجديد للتدرج (جيدة من 70 لـ 79 | قوية من 80 لـ 100)
+            if (bullPercentage >= 70) {
                 confidenceScore = bullPercentage;
-                signalText = `🟢 توقع صعود بنسبة ${confidenceScore}% (BUY)`;
-                signalClass = "signal-buy";
+                const isStrong = confidenceScore >= 80;
 
-                const slPrice = activePrice - 5.5;
-                const tp1Price = activePrice + 8.0;
-                const tp2Price = activePrice + 15.0;
+                signalText = isStrong ? `🟢 [إشارة قوية] صعود بنسبة ${confidenceScore}% (BUY)` : `🟡 [إشارة جيدة] صعود بنسبة ${confidenceScore}% (BUY)`;
+                signalClass = isStrong ? "signal-strong" : "signal-good";
+
+                // أهداف أوسع في حالة الإشارة القوية
+                const multiplier = isStrong ? 1.2 : 1.0;
+                const slPrice = activePrice - (5.5 * multiplier);
+                const tp1Price = activePrice + (8.0 * multiplier);
+                const tp2Price = activePrice + (15.0 * multiplier);
 
                 sl = slPrice.toFixed(2);
                 tp1 = tp1Price.toFixed(2);
                 tp2 = tp2Price.toFixed(2);
 
-                currentTradeSetup = { type: 'BUY', entry: activePrice.toFixed(2), sl, tp1, tp2 };
+                currentTradeSetup = { type: 'BUY', entry: activePrice.toFixed(2), sl, tp1, tp2, isStrong };
                 
                 executeBtn.disabled = false;
-                executeBtn.className = "execute-btn buy-active";
-                executeBtn.innerText = `📈 تنفيذ صفقة شراء (BUY) - ثقة التحليل ${confidenceScore}%`;
+                executeBtn.className = `execute-btn ${isStrong ? 'strong-buy-active' : 'good-active'}`;
+                executeBtn.innerText = isStrong ? `🚀 تنفيذ صفقة شراء قوية (BUY) - ثقة ${confidenceScore}%` : `⚠️ تنفيذ صفقة شراء جيدة (BUY) - ثقة ${confidenceScore}%`;
 
-            } else if (bearPercentage >= threshold) {
+            } else if (bearPercentage >= 70) {
                 confidenceScore = bearPercentage;
-                signalText = `🔴 توقع هبوط بنسبة ${confidenceScore}% (SELL)`;
-                signalClass = "signal-sell";
+                const isStrong = confidenceScore >= 80;
 
-                const slPrice = activePrice + 5.5;
-                const tp1Price = activePrice - 8.0;
-                const tp2Price = activePrice - 15.0;
+                signalText = isStrong ? `🔴 [إشارة قوية] هبوط بنسبة ${confidenceScore}% (SELL)` : `🟡 [إشارة جيدة] هبوط بنسبة ${confidenceScore}% (SELL)`;
+                signalClass = isStrong ? "signal-strong-sell" : "signal-good";
+
+                const multiplier = isStrong ? 1.2 : 1.0;
+                const slPrice = activePrice + (5.5 * multiplier);
+                const tp1Price = activePrice - (8.0 * multiplier);
+                const tp2Price = activePrice - (15.0 * multiplier);
 
                 sl = slPrice.toFixed(2);
                 tp1 = tp1Price.toFixed(2);
                 tp2 = tp2Price.toFixed(2);
 
-                currentTradeSetup = { type: 'SELL', entry: activePrice.toFixed(2), sl, tp1, tp2 };
+                currentTradeSetup = { type: 'SELL', entry: activePrice.toFixed(2), sl, tp1, tp2, isStrong };
                 
                 executeBtn.disabled = false;
-                executeBtn.className = "execute-btn sell-active";
-                executeBtn.innerText = `📉 تنفيذ صفقة بيع (SELL) - ثقة التحليل ${confidenceScore}%`;
+                executeBtn.className = `execute-btn ${isStrong ? 'strong-sell-active' : 'good-active'}`;
+                executeBtn.innerText = isStrong ? `💥 تنفيذ صفقة بيع قوية (SELL) - ثقة ${confidenceScore}%` : `⚠️ تنفيذ صفقة بيع جيدة (SELL) - ثقة ${confidenceScore}%`;
 
             } else {
+                // أقل من 70% (تذبذب)
                 currentTradeSetup = null;
                 executeBtn.disabled = true;
                 executeBtn.className = "execute-btn";
-                executeBtn.innerText = `⚖️ السوق متذبذب (صعود: ${bullPercentage}% | هبوط: ${bearPercentage}%)`;
+                executeBtn.innerText = `🛡️ الثقة أقل من 70% (صعود: ${bullPercentage}% | هبوط: ${bearPercentage}%)`;
                 
-                signalText = "🛡️ MARKET SIDEWAYS / WAITING...";
+                signalText = "🛡️ MARKET SIDEWAYS / WAITING 70%+...";
                 signalClass = "signal-wait";
                 confidenceScore = Math.max(bullPercentage, bearPercentage);
             }
@@ -527,8 +535,11 @@
         function executeOrder() {
             if (!currentTradeSetup) return;
             const typeText = currentTradeSetup.type === 'BUY' ? 'شراء (BUY)' : 'بيع (SELL)';
-            alert(`✅ تم إرسال وتفعيل صفقة الـ ${typeText} بنجاح!\n\n` +
-                  `🔹 الرمز: XAUUSDT (Bybit Futures)\n` +
+            const strengthText = currentTradeSetup.isStrong ? '🔥 قوية جداً (80%-100%)' : '⚡ جيدة (70%-79%)';
+            
+            alert(`✅ تم إرسال وتفعيل الصفقة بنجاح!\n\n` +
+                  `🔹 النوع: ${typeText}\n` +
+                  `🔹 قوة الإشارة: ${strengthText}\n` +
                   `🔹 سعر الدخول: $${currentTradeSetup.entry}\n` +
                   `🛡️ وقف الخسارة (SL): $${currentTradeSetup.sl}\n` +
                   `🎯 الهدف الأول (TP1): $${currentTradeSetup.tp1}\n` +
@@ -583,7 +594,7 @@
                     }
                     lastLivePrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-                    statusElement.innerText = "● محرك النقاط والترجيح الذكي مفعل";
+                    statusElement.innerText = "● محرك التدرج الذكي (70%-100%) مفعل";
                 }
             } catch (err) {}
         }
