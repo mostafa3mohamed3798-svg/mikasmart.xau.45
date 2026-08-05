@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Smart AI - Bybit Gold Dashboard</title>
+    <title>Mika Smart AI - Bybit Direct API</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
@@ -19,7 +19,7 @@
         .top-price-card { 
             background: linear-gradient(145deg, #151c2c, #0e1420); 
             border-radius: 16px; 
-            padding: 16px; 
+            padding: 20px; 
             width: 100%; 
             max-width: 500px; 
             text-align: center; 
@@ -31,13 +31,18 @@
         .header-title { font-size: 1.2rem; font-weight: bold; color: #10b981; margin-bottom: 4px; }
         .symbol-name { font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px; }
         
-        .tv-widget-box {
-            width: 100%;
-            height: 68px;
-            overflow: hidden;
-            border-radius: 10px;
+        /* عرض السعر */
+        .price-display { 
+            font-size: 2.5rem; 
+            font-weight: 800; 
+            color: #f59e0b; 
+            letter-spacing: 1px; 
+            margin: 8px 0; 
+            line-height: 1; 
+            transition: color 0.3s ease;
         }
-
+        .status-badge { font-size: 0.8rem; color: #10b981; margin-top: 6px; }
+        
         .signal-container { 
             display: flex; 
             justify-content: center; 
@@ -65,29 +70,18 @@
 
     <div class="top-price-card">
         <div class="header-title">🤖 Mika Smart AI</div>
-        <div class="symbol-name">سعر الذهب المباشر - Bybit Futures (XAUUSDT)</div>
+        <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
-        <div class="tv-widget-box">
-            <div class="tradingview-widget-container">
-              <div class="tradingview-widget-container__widget"></div>
-              <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
-              {
-              "symbol": "BYBIT:XAUUSDT",
-              "width": "100%",
-              "isTransparent": true,
-              "colorTheme": "dark",
-              "locale": "ar"
-            }
-              </script>
-            </div>
-        </div>
-
+        <div id="price" class="price-display">جاري الاتصال...</div>
+        <div id="status" class="status-badge">● جاري الاتصال بـ Bybit API...</div>
+        
         <div class="signal-container">
             <span class="signal-tag">🟢 BUY</span>
             <span class="signal-power">قوة الإشارة: <strong style="color: #fff;">91%</strong></span>
         </div>
     </div>
 
+    <!-- شارت TradingView المربوط بـ BYBIT -->
     <div class="chart-container">
         <div id="tradingview_chart" style="height:100%;width:100%;"></div>
         <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
@@ -108,6 +102,49 @@
             });
         </script>
     </div>
+
+    <script>
+        const priceElement = document.getElementById('price');
+        const statusElement = document.getElementById('status');
+        let lastPrice = 0;
+
+        async function fetchBybitPrice() {
+            // رابط Bybit V5 Tickers المباشر لعقود XAUUSDT
+            const bybitUrl = 'https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSDT';
+
+            try {
+                const response = await fetch(bybitUrl);
+                const data = await response.json();
+                
+                if (data && data.retCode === 0 && data.result && data.result.list.length > 0) {
+                    const rawPrice = parseFloat(data.result.list[0].lastPrice);
+                    const formattedPrice = rawPrice.toFixed(2);
+                    
+                    // تغيير اللون لحظياً عند تغير السعر صعوداً أو هبوطاً
+                    if (lastPrice > 0) {
+                        if (rawPrice > lastPrice) {
+                            priceElement.style.color = '#22c55e'; // أخضر
+                        } else if (rawPrice < lastPrice) {
+                            priceElement.style.color = '#ef4444'; // أحمر
+                        }
+                    }
+                    lastPrice = rawPrice;
+
+                    priceElement.innerText = `$${formattedPrice}`;
+                    statusElement.innerText = "● اتصال مباشر بالسعر الحي (Bybit API)";
+                    statusElement.style.color = "#10b981";
+                }
+            } catch (err) {
+                console.error("Bybit Fetch Error:", err);
+                statusElement.innerText = "⚠️ جاري إعادة الاتصال...";
+                statusElement.style.color = "#f59e0b";
+            }
+        }
+
+        // جلب السعر فوراً والتحديث كل 1 ثانية
+        fetchBybitPrice();
+        setInterval(fetchBybitPrice, 1000);
+    </script>
 
 </body>
 </html>
