@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold Engine - Dual Buy & Sell System</title>
+    <title>Mika Pro Gold Engine - Smart Dual Buy & Sell System</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -184,14 +184,14 @@
 <body>
 
     <div class="top-price-card">
-        <div class="header-title">🤖 Mika Pro Gold Engine - Dual Buy & Sell</div>
+        <div class="header-title">🤖 Mika Pro Gold - Smart Dual Engine</div>
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● محرك التحليل المزدوج نشط...</div>
+        <div id="status" class="status-badge">● محرك البحث المزدوج عن الشراء والبيع نشط...</div>
         
         <div class="signal-container">
-            <span id="signalTag" class="signal-tag signal-wait">⚪ ANALYZING...</span>
+            <span id="signalTag" class="signal-tag signal-wait">⚪ ANALYZING MARKET...</span>
             <span class="signal-power">درجة الثقة: <strong id="signalPower" style="color: #fff;">0%</strong></span>
         </div>
 
@@ -203,7 +203,7 @@
 
         <div class="trade-action-box">
             <button id="executeBtn" class="execute-btn" disabled onclick="executeOrder()">
-                ⏳ جاري تحليل السوق لاستخراج الإشارة...
+                ⏳ جاري تحليل السوق لاكتشاف فرصة شراء أو بيع...
             </button>
         </div>
     </div>
@@ -222,11 +222,11 @@
             <div id="emaDistVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">📈 EMA TREND ALIGNMENT</div>
+            <div class="filter-label">📈 MARKET MOMENTUM</div>
             <div id="emaTrendVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">🛡️ SUPPORT / RESISTANCE</div>
+            <div class="filter-label">🛡️ S/R ZONES</div>
             <div id="srRetestVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
@@ -377,20 +377,14 @@
             emaDistVal.innerText = `${distFromEMA20 > 0 ? '+' : ''}${distFromEMA20.toFixed(2)}$ (${pctDist.toFixed(2)}%)`;
             emaDistVal.style.color = Math.abs(pctDist) <= 0.4 ? "#22c55e" : "#f59e0b";
 
-            const isBullishTrend = lastEMA50 > lastEMA200 && lastClose > lastEMA200;
-            const isBearishTrend = lastEMA50 < lastEMA200 && lastClose < lastEMA200;
-
-            emaTrendVal.innerText = isBullishTrend ? "BULLISH TREND 🟢" : (isBearishTrend ? "BEARISH TREND 🔴" : "SIDEWAYS ⚖️");
-            emaTrendVal.style.color = isBullishTrend ? "#22c55e" : (isBearishTrend ? "#ef4444" : "#f59e0b");
-
             const rsiVal = calculateRSI(candles, 14);
             const stochK = calculateStochastic(candles, 14);
 
-            rsiFilterVal.innerText = `${rsiVal.toFixed(1)} (${rsiVal > 70 ? 'OVERBOUGHT 🔴' : (rsiVal < 30 ? 'OVERSOLD 🟢' : 'NEUTRAL ⚖️')})`;
-            rsiFilterVal.style.color = rsiVal > 70 ? "#ef4444" : (rsiVal < 30 ? "#22c55e" : "#94a3b8");
+            rsiFilterVal.innerText = `${rsiVal.toFixed(1)} (${rsiVal > 65 ? 'OVERBOUGHT 🔴' : (rsiVal < 38 ? 'OVERSOLD 🟢' : 'NEUTRAL ⚖️')})`;
+            rsiFilterVal.style.color = rsiVal > 65 ? "#ef4444" : (rsiVal < 38 ? "#22c55e" : "#94a3b8");
 
-            stochFilterVal.innerText = `%K: ${stochK.toFixed(1)} (${stochK > 80 ? 'OVERBOUGHT 🔴' : (stochK < 20 ? 'OVERSOLD 🟢' : 'NEUTRAL ⚖️')})`;
-            stochFilterVal.style.color = stochK > 80 ? "#ef4444" : (stochK < 20 ? "#22c55e" : "#94a3b8");
+            stochFilterVal.innerText = `%K: ${stochK.toFixed(1)} (${stochK > 75 ? 'OVERBOUGHT 🔴' : (stochK < 25 ? 'OVERSOLD 🟢' : 'NEUTRAL ⚖️')})`;
+            stochFilterVal.style.color = stochK > 75 ? "#ef4444" : (stochK < 25 ? "#22c55e" : "#94a3b8");
 
             const recentVols = rawVolumeData.slice(-20);
             const avgVol = recentVols.reduce((acc, curr) => acc + curr.value, 0) / 20;
@@ -403,26 +397,29 @@
             const recentSlice = candles.slice(-30);
             const supportLevel = Math.min(...recentSlice.map(c => c.low));
             const resistanceLevel = Math.max(...recentSlice.map(c => c.high));
-            const nearSupport = Math.abs(lastClose - supportLevel) < 5.0;
-            const nearResistance = Math.abs(lastClose - resistanceLevel) < 5.0;
+            const nearSupport = Math.abs(lastClose - supportLevel) < 6.0;
+            const nearResistance = Math.abs(lastClose - resistanceLevel) < 6.0;
 
             srRetestVal.innerText = nearSupport ? "NEAR SUPPORT 🟢" : (nearResistance ? "NEAR RESISTANCE 🔴" : "MID-RANGE ⚖️");
             srRetestVal.style.color = nearSupport ? "#22c55e" : (nearResistance ? "#ef4444" : "#94a3b8");
 
-            // 🎯 [منطق الإشارات الدقيقة - شراء أو بيع]:
-            let signalText = "⚪ NO CLEAR SIGNAL (WAIT)";
+            emaTrendVal.innerText = lastClose > lastEMA50 ? "BULLISH MOMENTUM 🟢" : "BEARISH MOMENTUM 🔴";
+            emaTrendVal.style.color = lastClose > lastEMA50 ? "#22c55e" : "#ef4444";
+
+            // ⚡ [منطق تقييم واكتشاف الفرصتين معاً بشكل احترافي]:
+            let signalText = "⚪ WAITING FOR CLEAR SETUP...";
             let signalClass = "signal-wait";
             let power = 50;
             let sl = "---", tp1 = "---", tp2 = "---";
 
-            // شروط البيع (Sell Setup):
-            const isSellSignal = (rsiVal > 65 || stochK > 75 || nearResistance) && (isBearishTrend || rsiVal > 70);
-            // شروط الشراء (Buy Setup):
-            const isBuySignal = (rsiVal < 35 || stochK < 25 || nearSupport) && (isBullishTrend || rsiVal < 30);
+            // شروط البيع الديناميكية (Sell Setup): متاح عند مناطق المقاومة أو التشبع الشرائي العالي
+            const isSellOpportunity = (rsiVal >= 60 || stochK >= 70 || nearResistance);
+            // شروط الشراء الديناميكية (Buy Setup): متاح عند مناطق الدعم أو التشبع البيعي
+            const isBuyOpportunity = (rsiVal <= 42 || stochK <= 30 || nearSupport);
 
-            if (isSellSignal && !isBuySignal) {
-                let sellScore = 75;
-                if (rsiVal > 70) sellScore += 15;
+            if (isSellOpportunity && !isBuyOpportunity) {
+                let sellScore = 72;
+                if (rsiVal >= 68) sellScore += 15;
                 if (nearResistance) sellScore += 10;
 
                 signalText = "🔴 SELL SIGNAL (SHORT)";
@@ -443,9 +440,9 @@
                 executeBtn.className = "execute-btn sell-active";
                 executeBtn.innerText = `📉 تنفيذ صفقة بيع (SELL) عند $${lastClose.toFixed(2)}`;
 
-            } else if (isBuySignal && !isSellSignal) {
-                let buyScore = 75;
-                if (rsiVal < 30) buyScore += 15;
+            } else if (isBuyOpportunity && !isSellOpportunity) {
+                let buyScore = 72;
+                if (rsiVal <= 35) buyScore += 15;
                 if (nearSupport) buyScore += 10;
 
                 signalText = "🟢 BUY SIGNAL (LONG)";
@@ -470,7 +467,7 @@
                 currentTradeSetup = null;
                 executeBtn.disabled = true;
                 executeBtn.className = "execute-btn";
-                executeBtn.innerText = "⏳ السوق في منطقة حيادية - بانتظار فرصة مؤكدة...";
+                executeBtn.innerText = "⏳ السوق بين المستويات - بانتظار إشارة شراء أو بيع واضحة...";
             }
 
             signalTagElement.innerText = signalText;
@@ -551,7 +548,7 @@
                     }
                     lastPrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-                    statusElement.innerText = "● محرك التحليل المزدوج يعمل بانتظام";
+                    statusElement.innerText = "● محرك البحث المزدوج يعمل بانتظام";
                 }
             } catch (err) {}
         }
