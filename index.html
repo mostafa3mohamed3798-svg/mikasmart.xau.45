@@ -187,7 +187,7 @@
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● الفلتر الآمن للتذبذب مفعل (حماية قصوى)...</div>
+        <div id="status" class="status-badge">● الفلتر الآمن للتذبذب مفعل...</div>
         
         <div class="signal-container">
             <span id="signalTag" class="signal-tag signal-wait">🛡️ WAITING FOR CLEAR SETUP...</span>
@@ -252,8 +252,8 @@
         <div class="chart-container">
             <div id="chart"></div>
         </div>
-    </div>
-        <script>
+        </div>
+            <script>
         const priceElement = document.getElementById('price');
         const statusElement = document.getElementById('status');
         const signalTagElement = document.getElementById('signalTag');
@@ -271,7 +271,7 @@
         const srRetestVal = document.getElementById('srRetestVal');
         const volNewsVal = document.getElementById('volNewsVal');
         
-        let lastPrice = 0;
+        let lastLivePrice = 0;
         let currentTimeframe = '15';
         let showEMAs = true;
         let showVolume = true;
@@ -358,18 +358,17 @@
         function analyzeMarket(candles, rawVolumeData) {
             if (candles.length < 200) return;
 
-            const lastCandle = candles[candles.length - 1];
-            const lastClose = lastCandle.close;
+            // استخدام السعر الحي المحدث إذا وجد، وإلا إغلاق آخر شمعة
+            const activePrice = lastLivePrice > 0 ? lastLivePrice : candles[candles.length - 1].close;
 
             const ema20Data = calculateEMA(candles, 20);
             const ema50Data = calculateEMA(candles, 50);
             const ema200Data = calculateEMA(candles, 200);
 
-            const lastEMA20 = ema20Data[ema20Data.length - 1].value;
             const lastEMA50 = ema50Data[ema50Data.length - 1].value;
             const lastEMA200 = ema200Data[ema200Data.length - 1].value;
 
-            const distFromEMA50 = lastClose - lastEMA50;
+            const distFromEMA50 = activePrice - lastEMA50;
             const pctDist = (distFromEMA50 / lastEMA50) * 100;
 
             emaDistVal.innerText = `${distFromEMA50 > 0 ? '+' : ''}${distFromEMA50.toFixed(2)}$ (${pctDist.toFixed(2)}%)`;
@@ -393,12 +392,16 @@
             volNewsVal.innerText = `VOL: ${lastVol.toFixed(0)} (${hasGoodVolume ? 'STRONG 🟢' : 'WEAK/CHOPPY ⚠️'})`;
             volNewsVal.style.color = hasGoodVolume ? "#22c55e" : "#ef4444";
 
+            // حساب مناطق الدعم والمقاومة بدقة وربطها بالعنصر
             const recentSlice = candles.slice(-30);
             const supportLevel = Math.min(...recentSlice.map(c => c.low));
             const resistanceLevel = Math.max(...recentSlice.map(c => c.high));
             
-            const isBullishTrend = lastClose > lastEMA50 && lastEMA50 > lastEMA200;
-            const isBearishTrend = lastClose < lastEMA50 && lastEMA50 < lastEMA200;
+            srRetestVal.innerText = `S: $${supportLevel.toFixed(1)} | R: $${resistanceLevel.toFixed(1)}`;
+            srRetestVal.style.color = "#3b82f6";
+
+            const isBullishTrend = activePrice > lastEMA50 && lastEMA50 > lastEMA200;
+            const isBearishTrend = activePrice < lastEMA50 && lastEMA50 < lastEMA200;
 
             emaTrendVal.innerText = isBullishTrend ? "BULLISH TREND 🟢" : (isBearishTrend ? "BEARISH TREND 🔴" : "SIDEWAYS/CHOPPY ⚖️");
             emaTrendVal.style.color = isBullishTrend ? "#22c55e" : (isBearishTrend ? "#ef4444" : "#94a3b8");
@@ -422,15 +425,15 @@
                 signalText = "🔴 HIGH PROBABILITY SELL";
                 signalClass = "signal-sell";
 
-                const slPrice = lastClose + 5.5;
-                const tp1Price = lastClose - 8.0;
-                const tp2Price = lastClose - 15.0;
+                const slPrice = activePrice + 5.5;
+                const tp1Price = activePrice - 8.0;
+                const tp2Price = activePrice - 15.0;
 
                 sl = slPrice.toFixed(2);
                 tp1 = tp1Price.toFixed(2);
                 tp2 = tp2Price.toFixed(2);
 
-                currentTradeSetup = { type: 'SELL', entry: lastClose.toFixed(2), sl, tp1, tp2 };
+                currentTradeSetup = { type: 'SELL', entry: activePrice.toFixed(2), sl, tp1, tp2 };
                 
                 executeBtn.disabled = false;
                 executeBtn.className = "execute-btn sell-active";
@@ -447,15 +450,15 @@
                 signalText = "🟢 HIGH PROBABILITY BUY";
                 signalClass = "signal-buy";
 
-                const slPrice = lastClose - 5.5;
-                const tp1Price = lastClose + 8.0;
-                const tp2Price = lastClose + 15.0;
+                const slPrice = activePrice - 5.5;
+                const tp1Price = activePrice + 8.0;
+                const tp2Price = activePrice + 15.0;
 
                 sl = slPrice.toFixed(2);
                 tp1 = tp1Price.toFixed(2);
                 tp2 = tp2Price.toFixed(2);
 
-                currentTradeSetup = { type: 'BUY', entry: lastClose.toFixed(2), sl, tp1, tp2 };
+                currentTradeSetup = { type: 'BUY', entry: activePrice.toFixed(2), sl, tp1, tp2 };
                 
                 executeBtn.disabled = false;
                 executeBtn.className = "execute-btn buy-active";
@@ -541,10 +544,10 @@
                 
                 if (data && data.retCode === 0 && data.result && data.result.list.length > 0) {
                     const rawPrice = parseFloat(data.result.list[0].lastPrice);
-                    if (lastPrice > 0) {
-                        priceElement.style.color = rawPrice > lastPrice ? '#22c55e' : (rawPrice < lastPrice ? '#ef4444' : '#3b82f6');
+                    if (lastLivePrice > 0) {
+                        priceElement.style.color = rawPrice > lastLivePrice ? '#22c55e' : (rawPrice < lastLivePrice ? '#ef4444' : '#3b82f6');
                     }
-                    lastPrice = rawPrice;
+                    lastLivePrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
                     statusElement.innerText = "● الفلتر الآمن للتذبذب مفعل (حماية قصوى)";
                 }
