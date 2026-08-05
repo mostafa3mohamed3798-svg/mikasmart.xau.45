@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold - Stable Momentum Engine</title>
+    <title>Mika Pro Gold - Balanced Momentum Engine</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -181,15 +181,15 @@
 <body>
 
     <div class="top-price-card">
-        <div class="header-title">🛡️ Mika Stable Scalper - إشارات مستقرة</div>
+        <div class="header-title">🛡️ Mika Balanced Scalper - شراء وبيع مستقر</div>
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● وضع تثبيت الإشارة ومنع التذبذب مفعل...</div>
+        <div id="status" class="status-badge">● نظام العمل المتوازن (شراء/بيع) مفعل...</div>
         
         <div class="signal-container">
-            <span id="signalTag" class="signal-tag signal-wait">⏳ في انتظار استقرار الزخم...</span>
-            <span class="signal-power">حالة الاتجاه: <strong id="signalPower" style="color: #fff;">مستقر</strong></span>
+            <span id="signalTag" class="signal-tag signal-wait">⏳ في انتظار تحديد الاتجاه...</span>
+            <span class="signal-power">الحالة: <strong id="signalPower" style="color: #fff;">متوازن</strong></span>
         </div>
 
         <div class="targets-box">
@@ -276,7 +276,6 @@
         let globalCandles = [];
         let globalVolumes = [];
         
-        // متغيرات التثبيت لمنع تقلب الإشارة العشوائي
         let lockedSignalType = null; 
         let lockedCandleTime = null;
 
@@ -373,32 +372,27 @@
             const vwapData = calculateVWAP(candles, rawVolumeData);
 
             const candleInfo = analyzeCurrentCandle(candles, activePrice);
-            
-            // جلب قيمة الـ VWAP الحالية للفلترة الصارمة
             const currentVwap = vwapData.length > 0 ? vwapData[vwapData.length - 1].value : activePrice;
 
-            // إذا تغيرت الشمعة، نقوم بفك التثبيت للسماح بتحليل شمعة جديدة بروية
             if (lockedCandleTime !== candleInfo.candleTime) {
                 lockedSignalType = null;
                 lockedCandleTime = candleInfo.candleTime;
             }
 
-            // نظام التثبيت: إذا ثبتت إشارة خلال هذه الشمعة، لا يتم تغييرها لمنع التشتت
             let signalType = lockedSignalType;
 
             if (!signalType) {
-                // شروط صارمة تعتمد على الـ VWAP والزخم الواضح لتجنب الإشارات الوهمية
-                if (candleInfo.bullPct >= 58 && activePrice >= currentVwap) {
+                if (candleInfo.bullPct >= 53) {
                     signalType = 'BUY';
-                    lockedSignalType = 'BUY'; // تثبيت الإشارة طوال الشمعة
-                } else if (candleInfo.bearPct >= 58 && activePrice <= currentVwap) {
+                    lockedSignalType = 'BUY';
+                } else if (candleInfo.bearPct >= 53) {
                     signalType = 'SELL';
-                    lockedSignalType = 'SELL'; // تثبيت الإشارة طوال الشمعة
+                    lockedSignalType = 'SELL';
                 }
             }
 
-            const targetOffsetTP = 1.2; // هدف قريب لتحقيق 3-4 دولار بسرعة
-            const targetOffsetSL = 1.5; // وقف خسارة ضيق ومحمي
+            const targetOffsetTP = 1.2; 
+            const targetOffsetSL = 1.5; 
 
             if (signalType === 'BUY') {
                 const slPrice = activePrice - targetOffsetSL;
@@ -448,8 +442,8 @@
                 executeBtn.innerHTML = `⏳ بانتظار إشارة مؤكدة وثابتة`;
             }
 
-            vwapFilterVal.innerHTML = `<span dir="ltr">${activePrice >= currentVwap ? 'فوق VWAP (آمن للشراء)' : 'تحت VWAP (آمن للبيع)'}</span>`;
-            macdFilterVal.innerHTML = `<span dir="ltr">فلتر الزخم مفعل</span>`;
+            vwapFilterVal.innerHTML = `<span dir="ltr">${activePrice >= currentVwap ? 'فوق VWAP' : 'تحت VWAP'}</span>`;
+            macdFilterVal.innerHTML = `<span dir="ltr">متوازن وثابت</span>`;
 
             if (showEMAs) {
                 ema50Series.setData(ema50Data);
@@ -527,7 +521,7 @@
 
         function changeTimeframe(tf) {
             currentTimeframe = tf;
-            lockedSignalType = null; // إعادة ضبط عند تغيير الفريم
+            lockedSignalType = null;
             document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
             loadChartData();
@@ -535,7 +529,6 @@
 
         function toggleEMA() {
             showEMAs = !showEMAs;
-            document.getElementById('emaTrendToggle')?.classList.toggle('active', showEMAs);
             document.getElementById('emaToggle').classList.toggle('active', showEMAs);
             loadChartData();
         }
@@ -553,4 +546,3 @@
     </script>
 </body>
 </html>
-
