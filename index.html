@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold Engine - Advanced Analysis</title>
+    <title>Mika Pro Gold Engine - Precise Technical Analysis</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -153,11 +153,11 @@
 <body>
 
     <div class="top-price-card">
-        <div class="header-title">🤖 Mika Pro Gold Engine - Advanced Analysis</div>
+        <div class="header-title">🤖 Mika Pro Gold Engine - Precise Analysis</div>
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● تحليل مؤشرات حقيقي نشط...</div>
+        <div id="status" class="status-badge">● معايير عالمية دقيقة نشطة...</div>
         
         <div class="signal-container">
             <span id="signalTag" class="signal-tag signal-wait">⚪ ANALYZING...</span>
@@ -173,15 +173,15 @@
 
     <div class="filters-dashboard">
         <div class="filter-card">
-            <div class="filter-label">📊 RSI ANALYZER (Max 75)</div>
+            <div class="filter-label">📊 RSI (Global Standard >70)</div>
             <div id="rsiFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">⚡ STOCHASTIC (Max 90)</div>
+            <div class="filter-label">⚡ STOCHASTIC (Global >80)</div>
             <div id="stochFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">📏 DISTANCE FROM EMA 20</div>
+            <div class="filter-label">📏 EXACT DISTANCE FROM EMA 20</div>
             <div id="emaDistVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
@@ -322,9 +322,9 @@
 
             const distFromEMA20 = lastClose - lastEMA20;
             const absDist = Math.abs(distFromEMA20);
-            const isTooFarFromEMA = absDist > 14;
+            const isTooFarFromEMA = absDist > 12;
 
-            emaDistVal.innerText = `${distFromEMA20 > 0 ? '+' : ''}${distFromEMA20.toFixed(1)}$`;
+            emaDistVal.innerText = `${distFromEMA20 > 0 ? '+' : ''}${distFromEMA20.toFixed(2)}$`;
             if (isTooFarFromEMA) {
                 emaDistVal.innerText += " (EXTENDED ⏳)";
                 emaDistVal.style.color = "#f59e0b";
@@ -338,14 +338,16 @@
             emaTrendVal.style.color = isBullishTrend ? "#22c55e" : "#ef4444";
 
             const rsiVal = calculateRSI(candles, 14);
-            const isRsiOverbought = rsiVal > 75;
-            rsiFilterVal.innerText = `${rsiVal.toFixed(1)} ${isRsiOverbought ? '🚫 (OVERBOUGHT >75)' : '🟢 SAFE'}`;
-            rsiFilterVal.style.color = isRsiOverbought ? "#ef4444" : "#22c55e";
+            const isRsiOverbought = rsiVal > 70;
+            const isRsiOversold = rsiVal < 30;
+            rsiFilterVal.innerText = `${rsiVal.toFixed(1)} ${isRsiOverbought ? '🚫 (OVERBOUGHT >70)' : (isRsiOversold ? '🔵 (OVERSOLD <30)' : '🟢 SAFE')}`;
+            rsiFilterVal.style.color = isRsiOverbought ? "#ef4444" : (isRsiOversold ? "#3b82f6" : "#22c55e");
 
             const stochK = calculateStochastic(candles, 14);
-            const isStochOverbought = stochK > 90;
-            stochFilterVal.innerText = `%K: ${stochK.toFixed(1)} ${isStochOverbought ? '🚫 (OVERBOUGHT >90)' : '🟢 SAFE'}`;
-            stochFilterVal.style.color = isStochOverbought ? "#ef4444" : "#22c55e";
+            const isStochOverbought = stochK > 80;
+            const isStochOversold = stochK < 20;
+            stochFilterVal.innerText = `%K: ${stochK.toFixed(1)} ${isStochOverbought ? '🚫 (OVERBOUGHT >80)' : (isStochOversold ? '🔵 (OVERSOLD <20)' : '🟢 SAFE')}`;
+            stochFilterVal.style.color = isStochOverbought ? "#ef4444" : (isStochOversold ? "#3b82f6" : "#22c55e");
 
             const recentVols = rawVolumeData.slice(-20);
             const avgVol = recentVols.reduce((acc, curr) => acc + curr.value, 0) / 20;
@@ -361,7 +363,7 @@
                 volNewsVal.innerText = "NEWS VOLATILITY ⚡";
                 volNewsVal.style.color = "#ef4444";
             } else {
-                volNewsVal.innerText = hasGoodVolume ? "VOLUME & NEWS SAFE 🟢" : "LOW VOLUME ⚠️";
+                volNewsVal.innerText = hasGoodVolume ? "VOLUME SAFE 🟢" : "LOW VOLUME ⚠️";
                 volNewsVal.style.color = hasGoodVolume ? "#22c55e" : "#f59e0b";
             }
 
@@ -383,18 +385,18 @@
             if (!isHighNewsVolatility && (isRsiOverbought || isStochOverbought || (nearResistance && isRetestingResistance))) {
                 signalText = "🔴 SELL SIGNAL";
                 signalClass = "signal-sell";
-                power = 89;
-                sl = (lastClose + 5.5).toFixed(2);
-                tp1 = (lastClose - 7.0).toFixed(2);
-                tp2 = (lastClose - 14.0).toFixed(2);
+                power = 91;
+                sl = (lastClose + 5.0).toFixed(2);
+                tp1 = (lastClose - 6.5).toFixed(2);
+                tp2 = (lastClose - 13.0).toFixed(2);
             } 
             else if (!isHighNewsVolatility && !isRsiOverbought && !isStochOverbought && !isTooFarFromEMA && isBullishTrend && (isRetestingSupport || lastClose >= lastEMA20) && hasGoodVolume) {
                 signalText = "🟢 STRONG BUY";
                 signalClass = "signal-buy";
-                power = 93;
-                sl = (lastClose - 5.5).toFixed(2);
-                tp1 = (lastClose + 7.0).toFixed(2);
-                tp2 = (lastClose + 14.0).toFixed(2);
+                power = 95;
+                sl = (lastClose - 5.0).toFixed(2);
+                tp1 = (lastClose + 6.5).toFixed(2);
+                tp2 = (lastClose + 13.0).toFixed(2);
             } 
             else {
                 signalText = "⚪ WAIT / PULLBACK";
@@ -468,7 +470,7 @@
                     }
                     lastPrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-                    statusElement.innerText = "● التحليل الفني المؤشراتي يعمل بدقة";
+                    statusElement.innerText = "● التحليل بالمعايير العالمية يعمل بدقة";
                 }
             } catch (err) {}
         }
