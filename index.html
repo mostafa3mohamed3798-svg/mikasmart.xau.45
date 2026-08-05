@@ -187,11 +187,11 @@
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● الفلتر الآمن للتذبذب مفعل...</div>
+        <div id="status" class="status-badge">● محرك النقاط والترجيح الذكي مفعل...</div>
         
         <div class="signal-container">
             <span id="signalTag" class="signal-tag signal-wait">🛡️ WAITING FOR CLEAR SETUP...</span>
-            <span class="signal-power">نسبة الثقة المحسوبة: <strong id="signalPower" style="color: #fff;">0%</strong></span>
+            <span class="signal-power">تحليل السوق: <strong id="signalPower" style="color: #fff;">0%</strong></span>
         </div>
 
         <div class="targets-box">
@@ -385,10 +385,9 @@
             const recentVols = rawVolumeData.slice(-20);
             const avgVol = recentVols.reduce((acc, curr) => acc + curr.value, 0) / 20;
             const lastVol = rawVolumeData[rawVolumeData.length - 1].value;
-            
-            const hasGoodVolume = lastVol >= avgVol * 1.05;
+            const hasGoodVolume = lastVol >= avgVol * 1.0;
 
-            volNewsVal.innerText = `VOL: ${lastVol.toFixed(0)} (${hasGoodVolume ? 'STRONG 🟢' : 'WEAK/CHOPPY ⚠️'})`;
+            volNewsVal.innerText = `VOL: ${lastVol.toFixed(0)} (${hasGoodVolume ? 'ACTIVE 🟢' : 'WEAK ⚠️'})`;
             volNewsVal.style.color = hasGoodVolume ? "#22c55e" : "#ef4444";
 
             const recentSlice = candles.slice(-30);
@@ -403,54 +402,60 @@
             srRetestVal.innerText = `S: $${supportLevel.toFixed(1)} | R: $${resistanceLevel.toFixed(1)}`;
             srRetestVal.style.color = "#3b82f6";
 
-            const isBullishTrend = activePrice > lastEMA50 && lastEMA50 > lastEMA200;
-            const isBearishTrend = activePrice < lastEMA50 && lastEMA50 < lastEMA200;
+            // نظام تجميع النقاط والترجيح الذكي (Scoring System)
+            let bullishScore = 0;
+            let bearishScore = 0;
 
-            emaTrendVal.innerText = isBullishTrend ? "BULLISH TREND 🟢" : (isBearishTrend ? "BEARISH TREND 🔴" : "SIDEWAYS/CHOPPY ⚖️");
-            emaTrendVal.style.color = isBullishTrend ? "#22c55e" : (isBearishTrend ? "#ef4444" : "#94a3b8");
+            // 1. تقييم الاتجاه بواسطة المتوسطات (وزن 35 درجة)
+            if (activePrice > lastEMA50 && lastEMA50 > lastEMA200) {
+                bullishScore += 35;
+            } else if (activePrice < lastEMA50 && lastEMA50 < lastEMA200) {
+                bearishScore += 35;
+            } else {
+                if (activePrice > lastEMA50) bullishScore += 15;
+                else bearishScore += 15;
+            }
 
-            let signalText = "🛡️ MARKET CHOPPY / WAITING...";
-            let signalClass = "signal-wait";
-            let confidenceScore = 0; 
+            // 2. تقييم مؤشر القوة النسبية RSI (وزن 25 درجة)
+            if (rsiVal < 45) {
+                bullishScore += 25;
+            } else if (rsiVal > 55) {
+                bearishScore += 25;
+            } else {
+                bullishScore += 10;
+                bearishScore += 10;
+            }
+
+            // 3. تقييم مؤشر الستوكاستيك Stoch %K (وزن 25 درجة)
+            if (stochK < 40) {
+                bullishScore += 25;
+            } else if (stochK > 60) {
+                bearishScore += 25;
+            } else {
+                bullishScore += 10;
+                bearishScore += 10;
+            }
+
+            // 4. تقييم الفوليوم وحجم التداول (وزن 15 درجة)
+            if (hasGoodVolume) {
+                if (activePrice >= candles[candles.length - 2].close) bullishScore += 15;
+                else bearishScore += 15;
+            }
+
+            let totalScore = bullishScore + bearishScore;
+            let bullPercentage = totalScore > 0 ? Math.round((bullishScore / totalScore) * 100) : 50;
+            let bearPercentage = totalScore > 0 ? Math.round((bearishScore / totalScore) * 100) : 50;
+
+            let signalText = "";
+            let signalClass = "";
+            let confidenceScore = 0;
             let sl = "---", tp1 = "---", tp2 = "---";
 
-            const isSellOpportunity = isBearishTrend && rsiVal >= 60 && stochK >= 65 && hasGoodVolume;
-            const isBuyOpportunity = isBullishTrend && rsiVal <= 40 && stochK <= 35 && hasGoodVolume;
+            const threshold = 60;
 
-            if (isSellOpportunity) {
-                confidenceScore = 70; 
-                if (rsiVal >= 68) confidenceScore += 15;
-                if (stochK >= 80) confidenceScore += 10;
-                if (lastVol >= avgVol * 1.5) confidenceScore += 5;
-
-                confidenceScore = Math.min(confidenceScore, 98);
-
-                signalText = "🔴 HIGH PROBABILITY SELL";
-                signalClass = "signal-sell";
-
-                const slPrice = activePrice + 5.5;
-                const tp1Price = activePrice - 8.0;
-                const tp2Price = activePrice - 15.0;
-
-                sl = slPrice.toFixed(2);
-                tp1 = tp1Price.toFixed(2);
-                tp2 = tp2Price.toFixed(2);
-
-                currentTradeSetup = { type: 'SELL', entry: activePrice.toFixed(2), sl, tp1, tp2 };
-                
-                executeBtn.disabled = false;
-                executeBtn.className = "execute-btn sell-active";
-                executeBtn.innerText = `📉 تنفيذ صفقة بيع (SELL) - ثقة ${confidenceScore}%`;
-
-            } else if (isBuyOpportunity) {
-                confidenceScore = 70;
-                if (rsiVal <= 32) confidenceScore += 15;
-                if (stochK <= 20) confidenceScore += 10;
-                if (lastVol >= avgVol * 1.5) confidenceScore += 5;
-
-                confidenceScore = Math.min(confidenceScore, 98);
-
-                signalText = "🟢 HIGH PROBABILITY BUY";
+            if (bullPercentage >= threshold) {
+                confidenceScore = bullPercentage;
+                signalText = `🟢 توقع صعود بنسبة ${confidenceScore}% (BUY)`;
                 signalClass = "signal-buy";
 
                 const slPrice = activePrice - 5.5;
@@ -465,22 +470,48 @@
                 
                 executeBtn.disabled = false;
                 executeBtn.className = "execute-btn buy-active";
-                executeBtn.innerText = `📈 تنفيذ صفقة شراء (BUY) - ثقة ${confidenceScore}%`;
+                executeBtn.innerText = `📈 تنفيذ صفقة شراء (BUY) - ثقة التحليل ${confidenceScore}%`;
+
+            } else if (bearPercentage >= threshold) {
+                confidenceScore = bearPercentage;
+                signalText = `🔴 توقع هبوط بنسبة ${confidenceScore}% (SELL)`;
+                signalClass = "signal-sell";
+
+                const slPrice = activePrice + 5.5;
+                const tp1Price = activePrice - 8.0;
+                const tp2Price = activePrice - 15.0;
+
+                sl = slPrice.toFixed(2);
+                tp1 = tp1Price.toFixed(2);
+                tp2 = tp2Price.toFixed(2);
+
+                currentTradeSetup = { type: 'SELL', entry: activePrice.toFixed(2), sl, tp1, tp2 };
+                
+                executeBtn.disabled = false;
+                executeBtn.className = "execute-btn sell-active";
+                executeBtn.innerText = `📉 تنفيذ صفقة بيع (SELL) - ثقة التحليل ${confidenceScore}%`;
 
             } else {
                 currentTradeSetup = null;
                 executeBtn.disabled = true;
                 executeBtn.className = "execute-btn";
-                executeBtn.innerText = "🛡️ السوق متذبذب - لا توجد صفقات آمنة حالياً";
+                executeBtn.innerText = `⚖️ السوق متذبذب (صعود: ${bullPercentage}% | هبوط: ${bearPercentage}%)`;
+                
+                signalText = "🛡️ MARKET SIDEWAYS / WAITING...";
+                signalClass = "signal-wait";
+                confidenceScore = Math.max(bullPercentage, bearPercentage);
             }
 
             signalTagElement.innerText = signalText;
             signalTagElement.className = `signal-tag ${signalClass}`;
-            signalPowerElement.innerText = `${confidenceScore}%`;
+            signalPowerElement.innerText = `${confidenceScore}% (صعود: ${bullPercentage}% - هبوط: ${bearPercentage}%)`;
 
             slValElement.innerText = sl !== "---" ? `$${sl}` : "---";
             tp1ValElement.innerText = tp1 !== "---" ? `$${tp1}` : "---";
             tp2ValElement.innerText = tp2 !== "---" ? `$${tp2}` : "---";
+
+            emaTrendVal.innerText = `صعود: ${bullPercentage}% | هبوط: ${bearPercentage}%`;
+            emaTrendVal.style.color = bullPercentage > bearPercentage ? "#22c55e" : "#ef4444";
 
             if (showEMAs) {
                 ema20Series.setData(ema20Data);
@@ -552,7 +583,7 @@
                     }
                     lastLivePrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-                    statusElement.innerText = "● الفلتر الآمن للتذبذب مفعل (حماية قصوى)";
+                    statusElement.innerText = "● محرك النقاط والترجيح الذكي مفعل";
                 }
             } catch (err) {}
         }
