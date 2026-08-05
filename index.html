@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Smart AI - XAUUSD Live</title>
+    <title>Mika Smart AI - XAUUSD Precision Dashboard</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
@@ -19,7 +19,7 @@
         .top-price-card { 
             background: linear-gradient(145deg, #151c2c, #0e1420); 
             border-radius: 16px; 
-            padding: 20px; 
+            padding: 16px; 
             width: 100%; 
             max-width: 500px; 
             text-align: center; 
@@ -29,10 +29,16 @@
         }
         
         .header-title { font-size: 1.2rem; font-weight: bold; color: #10b981; margin-bottom: 4px; }
-        .symbol-name { font-size: 0.9rem; color: #94a3b8; margin-bottom: 12px; }
-        .price-display { font-size: 2.5rem; font-weight: 800; color: #f59e0b; letter-spacing: 1px; margin: 8px 0; line-height: 1; }
-        .status-badge { font-size: 0.8rem; color: #10b981; margin-top: 6px; }
+        .symbol-name { font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px; }
         
+        /* تكييف ويدجت TradingView المباشر لمنع أي فجوة */
+        .tv-widget-box {
+            width: 100%;
+            height: 68px;
+            overflow: hidden;
+            border-radius: 10px;
+        }
+
         .signal-container { 
             display: flex; 
             justify-content: center; 
@@ -60,17 +66,31 @@
 
     <div class="top-price-card">
         <div class="header-title">🤖 Mika Smart AI</div>
-        <div class="symbol-name">Binance Futures - XAU/USDT</div>
+        <div class="symbol-name">سعر الذهب الآجل المباشر - BINANCE:XAUUSDT</div>
         
-        <div id="price" class="price-display">جاري الاتصال...</div>
-        <div id="status" class="status-badge">● جاري تحديث السعر المباشر...</div>
-        
+        <!-- ويدجت السعر المباشر المتطابق 100% مع الشارت -->
+        <div class="tv-widget-box">
+            <div class="tradingview-widget-container">
+              <div class="tradingview-widget-container__widget"></div>
+              <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
+              {
+              "symbol": "BINANCE:XAUUSDT",
+              "width": "100%",
+              "isTransparent": true,
+              "colorTheme": "dark",
+              "locale": "ar"
+            }
+              </script>
+            </div>
+        </div>
+
         <div class="signal-container">
             <span class="signal-tag">🟢 BUY</span>
             <span class="signal-power">قوة الإشارة: <strong style="color: #fff;">91%</strong></span>
         </div>
     </div>
 
+    <!-- الشارت المباشر -->
     <div class="chart-container">
         <div id="tradingview_chart" style="height:100%;width:100%;"></div>
         <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
@@ -91,40 +111,6 @@
             });
         </script>
     </div>
-
-    <script>
-        const priceElement = document.getElementById('price');
-        const statusElement = document.getElementById('status');
-
-        async function fetchBinanceFuturesPrice() {
-            // الاستعلام المباشر من سيرفر بينانس عقود آفرة مباشرة لتطابق السعر
-            const targetUrl = 'https://fapi.binance.com/fapi/v1/ticker/price?symbol=XAUUSDT';
-            const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(targetUrl) + '&t=' + Date.now();
-
-            try {
-                const response = await fetch(proxyUrl);
-                const data = await response.json();
-                
-                if (data && data.contents) {
-                    const parsedData = JSON.parse(data.contents);
-                    if (parsedData && parsedData.price) {
-                        const priceValue = parseFloat(parsedData.price).toFixed(2);
-                        priceElement.innerText = `$${priceValue}`;
-                        statusElement.innerText = "● سعر مباشر مطبق مع الشارت";
-                        statusElement.style.color = "#10b981";
-                    }
-                }
-            } catch (err) {
-                console.error("Fetch Error:", err);
-                statusElement.innerText = "⚠️ جاري التحديث...";
-                statusElement.style.color = "#f59e0b";
-            }
-        }
-
-        // جلب فوراً وتحديث سريع جداً كل 1 ثانية
-        fetchBinanceFuturesPrice();
-        setInterval(fetchBinanceFuturesPrice, 1000);
-    </script>
 
 </body>
 </html>
