@@ -27,15 +27,15 @@
 
     <div class="main-card">
         <div class="logo-title">🤖 Mika Smart AI</div>
-        <div class="symbol">XAU/USDT - Gold Perpetual</div>
+        <div class="symbol">XAU/USDT - Binance Feed</div>
         
-        <!-- Single Quote Widget -->
+        <!-- Single Quote Widget from Binance -->
         <div class="price-container">
             <div class="tradingview-widget-container">
               <div class="tradingview-widget-container__widget"></div>
               <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
               {
-              "symbol": "BYBIT:XAUUSDT.P",
+              "symbol": "BINANCE:XAUUSDT",
               "width": "100%",
               "colorTheme": "dark",
               "isTransparent": true,
@@ -54,14 +54,14 @@
     </div>
 
     <div class="chart-card">
-        <!-- Chart Widget (15m Interval) -->
+        <!-- Chart Widget (Binance Feed) -->
         <div class="tradingview-widget-container">
           <div id="tradingview_chart" style="height:100%;width:100%;"></div>
           <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
           <script type="text/javascript">
           new TradingView.widget({
             "autosize": true,
-            "symbol": "BYBIT:XAUUSDT.P",
+            "symbol": "BINANCE:XAUUSDT",
             "interval": "15",
             "timezone": "Etc/UTC",
             "theme": "dark",
