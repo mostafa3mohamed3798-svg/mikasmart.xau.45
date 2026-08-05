@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Smart AI - Bybit Direct API</title>
+    <title>Mika Smart AI - Bybit Live</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
@@ -31,7 +31,6 @@
         .header-title { font-size: 1.2rem; font-weight: bold; color: #10b981; margin-bottom: 4px; }
         .symbol-name { font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px; }
         
-        /* عرض السعر */
         .price-display { 
             font-size: 2.5rem; 
             font-weight: 800; 
@@ -55,14 +54,21 @@
         .signal-tag { background-color: rgba(34, 197, 94, 0.15); color: #22c55e; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 0.95rem; }
         .signal-power { color: #94a3b8; font-size: 0.9rem; }
 
+        /* حاوية الشارت الأكيدة عبر Iframe */
         .chart-container { 
             background: #151c2c; 
             border-radius: 16px; 
-            padding: 8px; 
+            overflow: hidden;
             width: 100%; 
             max-width: 500px; 
             border: 1px solid #232d42; 
             height: 440px; 
+        }
+
+        .chart-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
         }
     </style>
 </head>
@@ -81,26 +87,9 @@
         </div>
     </div>
 
-    <!-- شارت TradingView المربوط بـ BYBIT -->
+    <!-- شارت TradingView المضمون عبر iframe مباشر -->
     <div class="chart-container">
-        <div id="tradingview_chart" style="height:100%;width:100%;"></div>
-        <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-        <script type="text/javascript">
-            new TradingView.widget({
-                "autosize": true,
-                "symbol": "BYBIT:XAUUSDT",
-                "interval": "15",
-                "timezone": "Etc/UTC",
-                "theme": "dark",
-                "style": "1",
-                "locale": "ar",
-                "toolbar_bg": "#f1f3f6",
-                "enable_publishing": false,
-                "hide_top_toolbar": false,
-                "save_image": false,
-                "container_id": "tradingview_chart"
-            });
-        </script>
+        <iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=BYBIT%3AXAUUSDT&interval=15&hidesidetoolbar=1&symboledit=1&saveimage=0&toolbarbg=f1f3f6&theme=dark&style=1&timezone=Etc%2FUTC&locale=ar"></iframe>
     </div>
 
     <script>
@@ -109,7 +98,6 @@
         let lastPrice = 0;
 
         async function fetchBybitPrice() {
-            // رابط Bybit V5 Tickers المباشر لعقود XAUUSDT
             const bybitUrl = 'https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSDT';
 
             try {
@@ -120,12 +108,11 @@
                     const rawPrice = parseFloat(data.result.list[0].lastPrice);
                     const formattedPrice = rawPrice.toFixed(2);
                     
-                    // تغيير اللون لحظياً عند تغير السعر صعوداً أو هبوطاً
                     if (lastPrice > 0) {
                         if (rawPrice > lastPrice) {
-                            priceElement.style.color = '#22c55e'; // أخضر
+                            priceElement.style.color = '#22c55e';
                         } else if (rawPrice < lastPrice) {
-                            priceElement.style.color = '#ef4444'; // أحمر
+                            priceElement.style.color = '#ef4444';
                         }
                     }
                     lastPrice = rawPrice;
@@ -141,7 +128,6 @@
             }
         }
 
-        // جلب السعر فوراً والتحديث كل 1 ثانية
         fetchBybitPrice();
         setInterval(fetchBybitPrice, 1000);
     </script>
