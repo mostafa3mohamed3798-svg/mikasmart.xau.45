@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold - Fixed SR Engine</title>
+    <title>Mika Pro Gold - Scalping SR Engine</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -188,11 +188,11 @@
 <body>
 
     <div class="top-price-card">
-        <div class="header-title">🤖 Mika Pro Gold - Fixed SR Engine</div>
+        <div class="header-title">🤖 Mika Pro Gold - Scalping SR</div>
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● نظام الدعم الثابت والمستويات مفعل...</div>
+        <div id="status" class="status-badge">● نظام الدعم السريع للتداول اللحظي مفعل...</div>
         
         <div class="signal-container">
             <span id="signalTag" class="signal-tag signal-wait">🛡️ WAITING FOR 70%+ CONFIDENCE...</span>
@@ -230,9 +230,9 @@
             <div id="emaTrendVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">🛡️ FIXED S/R ZONES</div>
+            <div class="filter-label">🛡️ SCALPING S/R ZONES</div>
             <div id="srRetestVal" class="filter-value" style="color: #94a3b8;">--</div>
-            <div style="font-size: 0.60rem; color: #64748b; margin-top: 3px;">(محسوبة من آخر 100 شمعة للتاريخي)</div>
+            <div style="font-size: 0.60rem; color: #64748b; margin-top: 3px;">(محسوبة من آخر 35 شمعة للتداول السريع)</div>
         </div>
         <div class="filter-card">
             <div class="filter-label">💧 VOLUME FILTER</div>
@@ -366,20 +366,12 @@
             return ((currentClose - lowestLow) / ((highestHigh - lowestLow) || 1)) * 100;
         }
 
+        // تم تعديل النطاق هنا إلى آخر 35 شمعة لتناسب التداول السريع (Scalping) وتكون المستويات قريبة من السعر
         function calculateFixedSR(candles) {
-            if (candles.length < 50) return;
-            const historicalSlice = candles.slice(-100);
-            const calculatedSupport = Math.min(...historicalSlice.map(c => c.low));
-            const calculatedResistance = Math.max(...historicalSlice.map(c => c.high));
-
-            if (!fixedSupport || !fixedResistance) {
-                fixedSupport = calculatedSupport;
-                fixedResistance = calculatedResistance;
-            } else {
-                const currentP = candles[candles.length - 1].close;
-                if (currentP < fixedSupport) fixedSupport = currentP;
-                if (currentP > fixedResistance) fixedResistance = currentP;
-            }
+            if (candles.length < 20) return;
+            const historicalSlice = candles.slice(-35);
+            fixedSupport = Math.min(...historicalSlice.map(c => c.low));
+            fixedResistance = Math.max(...historicalSlice.map(c => c.high));
         }
 
         function analyzeMarket(candles, rawVolumeData) {
@@ -422,11 +414,9 @@
             srRetestVal.innerHTML = `<span dir="ltr">S: $${fixedSupport.toFixed(1)}</span> | <span dir="ltr">R: $${fixedResistance.toFixed(1)}</span>`;
             srRetestVal.style.color = "#3b82f6";
 
-            // [تعديل جوهري]: جعل نقاط الزخم تتأثر بسعر اللحظة (activePrice) لتتغير النسب فوراية مع كل تحديث سعري
             let bullishScore = 0;
             let bearishScore = 0;
 
-            // 1. تقييم الاتجاه بناءً على موقع السعر الحالي من المتوسطات
             if (activePrice > lastEMA50 && lastEMA50 > lastEMA200) {
                 bullishScore += 35;
             } else if (activePrice < lastEMA50 && lastEMA50 < lastEMA200) {
@@ -436,18 +426,15 @@
                 else bearishScore += 18;
             }
 
-            // 2. تقييم مؤشر RSI المحدث لحظياً
             if (rsiVal < 45) {
                 bullishScore += 25;
             } else if (rsiVal > 55) {
                 bearishScore += 25;
             } else {
-                // تدرج ديناميكي حسب قرب السعر من المنتصف
                 if (rsiVal >= 50) bearishScore += 12;
                 else bullishScore += 12;
             }
 
-            // 3. تقييم مؤشر Stochastic المحدث لحظياً
             if (stochK < 40) {
                 bullishScore += 25;
             } else if (stochK > 60) {
@@ -457,7 +444,6 @@
                 else bullishScore += 12;
             }
 
-            // 4. تقييم الحركة الفورية مقارنة بالشمعة السابقة
             const prevClose = candles[candles.length - 2].close;
             if (activePrice >= prevClose) {
                 bullishScore += 15;
@@ -482,9 +468,9 @@
                 signalClass = isStrong ? "signal-strong" : "signal-good";
 
                 const multiplier = isStrong ? 1.2 : 1.0;
-                const slPrice = activePrice - (5.5 * multiplier);
-                const tp1Price = activePrice + (8.0 * multiplier);
-                const tp2Price = activePrice + (15.0 * multiplier);
+                const slPrice = activePrice - (4.0 * multiplier); // مسافات أصغر تناسب السكالبينج
+                const tp1Price = activePrice + (6.0 * multiplier);
+                const tp2Price = activePrice + (12.0 * multiplier);
 
                 sl = slPrice.toFixed(2);
                 tp1 = tp1Price.toFixed(2);
@@ -504,9 +490,9 @@
                 signalClass = isStrong ? "signal-strong-sell" : "signal-good";
 
                 const multiplier = isStrong ? 1.2 : 1.0;
-                const slPrice = activePrice + (5.5 * multiplier);
-                const tp1Price = activePrice - (8.0 * multiplier);
-                const tp2Price = activePrice - (15.0 * multiplier);
+                const slPrice = activePrice + (4.0 * multiplier);
+                const tp1Price = activePrice - (6.0 * multiplier);
+                const tp2Price = activePrice - (12.0 * multiplier);
 
                 sl = slPrice.toFixed(2);
                 tp1 = tp1Price.toFixed(2);
@@ -563,7 +549,7 @@
                   `🛡️ وقف الخسارة (SL): $${currentTradeSetup.sl}\n` +
                   `🎯 الهدف الأول (TP1): $${currentTradeSetup.tp1}\n` +
                   `🎯 الهدف الثاني (TP2): $${currentTradeSetup.tp2}\n\n` +
-                  `بالتوفيق في تداولاتك! 🚀`);
+                  `بالتوفيق في تداولاتك السريعة! 🚀`);
         }
 
         async function loadChartData() {
@@ -613,9 +599,8 @@
                     }
                     lastLivePrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-                    statusElement.innerText = "● نظام الدعم الثابت والمستويات مفعل";
+                    statusElement.innerText = "● نظام الدعم السريع للتداول اللحظي مفعل";
 
-                    // تحديث التحليل والنسب فوراً مع كل تحديث للسعر الحي كل ثانية
                     if (globalCandles.length > 0) {
                         analyzeMarket(globalCandles, globalVolumes);
                     }
