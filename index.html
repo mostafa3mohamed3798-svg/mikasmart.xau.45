@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Smart AI - XAUUSD Precision Dashboard</title>
+    <title>Mika Smart AI - Gold Dashboard</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
@@ -31,7 +31,6 @@
         .header-title { font-size: 1.2rem; font-weight: bold; color: #10b981; margin-bottom: 4px; }
         .symbol-name { font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px; }
         
-        /* تكييف ويدجت TradingView المباشر لمنع أي فجوة */
         .tv-widget-box {
             width: 100%;
             height: 68px;
@@ -66,15 +65,15 @@
 
     <div class="top-price-card">
         <div class="header-title">🤖 Mika Smart AI</div>
-        <div class="symbol-name">سعر الذهب الآجل المباشر - BINANCE:XAUUSDT</div>
+        <div class="symbol-name">سعر الذهب العالمي المباشر - XAU/USD</div>
         
-        <!-- ويدجت السعر المباشر المتطابق 100% مع الشارت -->
+        <!-- ويدجت السعر المباشر بالرمز العالمي المفتوح -->
         <div class="tv-widget-box">
             <div class="tradingview-widget-container">
               <div class="tradingview-widget-container__widget"></div>
               <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
               {
-              "symbol": "BINANCE:XAUUSDT",
+              "symbol": "OANDA:XAUUSD",
               "width": "100%",
               "isTransparent": true,
               "colorTheme": "dark",
@@ -90,14 +89,14 @@
         </div>
     </div>
 
-    <!-- الشارت المباشر -->
+    <!-- الشارت المباشر بنفس الرمز العالمي -->
     <div class="chart-container">
         <div id="tradingview_chart" style="height:100%;width:100%;"></div>
         <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
         <script type="text/javascript">
             new TradingView.widget({
                 "autosize": true,
-                "symbol": "BINANCE:XAUUSDT",
+                "symbol": "OANDA:XAUUSD",
                 "interval": "15",
                 "timezone": "Etc/UTC",
                 "theme": "dark",
