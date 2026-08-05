@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold Engine - Precise Technical Analysis</title>
+    <title>Mika Pro Gold Engine - High Precision</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -153,15 +153,15 @@
 <body>
 
     <div class="top-price-card">
-        <div class="header-title">🤖 Mika Pro Gold Engine - Precise Analysis</div>
+        <div class="header-title">🤖 Mika Pro Gold Engine - Ultra Precision</div>
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● معايير عالمية دقيقة نشطة...</div>
+        <div id="status" class="status-badge">● فلاتر دقة مؤسسية نشطة...</div>
         
         <div class="signal-container">
-            <span id="signalTag" class="signal-tag signal-wait">⚪ ANALYZING...</span>
-            <span class="signal-power">التوافق: <strong id="signalPower" style="color: #fff;">0%</strong></span>
+            <span id="signalTag" class="signal-tag signal-wait">⚪ SCANNING SETUP...</span>
+            <span class="signal-power">مستوى الدقة: <strong id="signalPower" style="color: #fff;">0%</strong></span>
         </div>
 
         <div class="targets-box">
@@ -173,11 +173,11 @@
 
     <div class="filters-dashboard">
         <div class="filter-card">
-            <div class="filter-label">📊 RSI (Global Standard >70)</div>
+            <div class="filter-label">📊 RSI (Strict Zone)</div>
             <div id="rsiFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">⚡ STOCHASTIC (Global >80)</div>
+            <div class="filter-label">⚡ STOCHASTIC (Strict Zone)</div>
             <div id="stochFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
@@ -250,7 +250,6 @@
             borderUpColor: '#22c55e', borderDownColor: '#ef4444', wickUpColor: '#22c55e', wickDownColor: '#ef4444'
         });
 
-        // إخفاء القيم الرقمية من على الشارت ونقلها للوحة المؤشرات بالأسفل
         const volumeSeries = chart.addHistogramSeries({
             color: '#26a69a', 
             priceFormat: { type: 'volume' },
@@ -331,7 +330,7 @@
 
             const distFromEMA20 = lastClose - lastEMA20;
             const absDist = Math.abs(distFromEMA20);
-            const isTooFarFromEMA = absDist > 12;
+            const isTooFarFromEMA = absDist > 10; // معيار أضيق لزيادة الدقة
 
             emaDistVal.innerText = `${distFromEMA20 > 0 ? '+' : ''}${distFromEMA20.toFixed(2)}$`;
             if (isTooFarFromEMA) {
@@ -343,75 +342,77 @@
             }
 
             const isBullishTrend = lastEMA50 > lastEMA200 && lastClose > lastEMA200;
-            emaTrendVal.innerText = isBullishTrend ? "BULLISH (50>200) 🟢" : "BEARISH/RANGING ⚠️";
+            emaTrendVal.innerText = isBullishTrend ? "BULLISH (Strict) 🟢" : "BEARISH/RANGING ⚠️";
             emaTrendVal.style.color = isBullishTrend ? "#22c55e" : "#ef4444";
 
             const rsiVal = calculateRSI(candles, 14);
-            const isRsiOverbought = rsiVal > 70;
-            const isRsiOversold = rsiVal < 30;
-            rsiFilterVal.innerText = `${rsiVal.toFixed(1)} ${isRsiOverbought ? '🚫 (OVERBOUGHT >70)' : (isRsiOversold ? '🔵 (OVERSOLD <30)' : '🟢 SAFE')}`;
-            rsiFilterVal.style.color = isRsiOverbought ? "#ef4444" : (isRsiOversold ? "#3b82f6" : "#22c55e");
+            const isRsiOverbought = rsiVal > 72; // معيار مؤسسي صارم للبيع
+            const isRsiOversold = rsiVal < 28;  // معيار مؤسسي صارم للشراء
+            rsiFilterVal.innerText = `${rsiVal.toFixed(1)} ${isRsiOverbought ? '🚫 (STRICT >72)' : (isRsiOversold ? '🔵 (STRICT <28)' : '⚖️ NEUTRAL')}`;
+            rsiFilterVal.style.color = isRsiOverbought ? "#ef4444" : (isRsiOversold ? "#3b82f6" : "#94a3b8");
 
             const stochK = calculateStochastic(candles, 14);
-            const isStochOverbought = stochK > 80;
-            const isStochOversold = stochK < 20;
-            stochFilterVal.innerText = `%K: ${stochK.toFixed(1)} ${isStochOverbought ? '🚫 (OVERBOUGHT >80)' : (isStochOversold ? '🔵 (OVERSOLD <20)' : '🟢 SAFE')}`;
-            stochFilterVal.style.color = isStochOverbought ? "#ef4444" : (isStochOversold ? "#3b82f6" : "#22c55e");
+            const isStochOverbought = stochK > 85;
+            const isStochOversold = stochK < 15;
+            stochFilterVal.innerText = `%K: ${stochK.toFixed(1)} ${isStochOverbought ? '🚫 (STRICT >85)' : (isStochOversold ? '🔵 (STRICT <15)' : '⚖️ NEUTRAL')}`;
+            stochFilterVal.style.color = isStochOverbought ? "#ef4444" : (isStochOversold ? "#3b82f6" : "#94a3b8");
 
             const recentVols = rawVolumeData.slice(-20);
             const avgVol = recentVols.reduce((acc, curr) => acc + curr.value, 0) / 20;
             const lastVol = rawVolumeData[rawVolumeData.length - 1].value;
-            const hasGoodVolume = lastVol > avgVol * 0.75;
+            const hasGoodVolume = lastVol > avgVol * 0.9; // حجم تداول أقوى للتأكيد
 
             const recentSlice = candles.slice(-30);
             const lastCandleBody = Math.abs(lastCandle.close - lastCandle.open);
             const avgBody = recentSlice.reduce((acc, c) => acc + Math.abs(c.close - c.open), 0) / recentSlice.length;
-            const isHighNewsVolatility = lastCandleBody > (avgBody * 2.8);
+            const isHighNewsVolatility = lastCandleBody > (avgBody * 2.5);
 
-            // ربط رقم الحجم الفعلي ليظهر بداخل كارد لوحة المؤشرات بدلاً من الشارت
             if (isHighNewsVolatility) {
                 volNewsVal.innerText = `VOL: ${lastVol.toFixed(0)} (NEWS ⚡)`;
                 volNewsVal.style.color = "#ef4444";
             } else {
-                volNewsVal.innerText = `VOL: ${lastVol.toFixed(0)} (${hasGoodVolume ? 'SAFE 🟢' : 'LOW ⚠️'})`;
+                volNewsVal.innerText = `VOL: ${lastVol.toFixed(0)} (${hasGoodVolume ? 'STRONG 🟢' : 'WEAK ⚠️'})`;
                 volNewsVal.style.color = hasGoodVolume ? "#22c55e" : "#f59e0b";
             }
 
             const supportLevel = Math.min(...recentSlice.map(c => c.low));
             const resistanceLevel = Math.max(...recentSlice.map(c => c.high));
-            const nearSupport = Math.abs(lastClose - supportLevel) < 4.5;
-            const nearResistance = Math.abs(lastClose - resistanceLevel) < 4.5;
-            const isRetestingSupport = nearSupport && lastCandle.low <= supportLevel + 1.8;
-            const isRetestingResistance = nearResistance && lastCandle.high >= resistanceLevel - 1.8;
+            const nearSupport = Math.abs(lastClose - supportLevel) < 3.5;
+            const nearResistance = Math.abs(lastClose - resistanceLevel) < 3.5;
+            const isRetestingSupport = nearSupport && lastCandle.low <= supportLevel + 1.2;
+            const isRetestingResistance = nearResistance && lastCandle.high >= resistanceLevel - 1.2;
 
             srRetestVal.innerText = isRetestingSupport ? "SUPPORT RETEST 🎯" : (isRetestingResistance ? "RESISTANCE RETEST 🎯" : "MID-RANGE ⚖️");
             srRetestVal.style.color = (isRetestingSupport || isRetestingResistance) ? "#3b82f6" : "#94a3b8";
 
-            let signalText = "⚪ WAIT / NEUTRAL";
+            // 🔒 شروط دقة صارمة جداً (أكثر من 95%) لمنع إعطاء إشارات عشوائية
+            let signalText = "⚪ WAITING FOR PERFECT SETUP";
             let signalClass = "signal-wait";
-            let power = 50;
+            let power = 40;
             let sl = "---", tp1 = "---", tp2 = "---";
 
-            if (!isHighNewsVolatility && (isRsiOverbought || isStochOverbought || (nearResistance && isRetestingResistance))) {
-                signalText = "🔴 SELL SIGNAL";
+            // شرط البيع عالي الدقة: تشبع شرعي قوي + إعادة اختبار مقاومة + غياب أخبار عنيفة
+            if (!isHighNewsVolatility && (isRsiOverbought && stochK > 80) && (nearResistance && isRetestingResistance)) {
+                signalText = "🔴 HIGH-PRECISION SELL";
                 signalClass = "signal-sell";
-                power = 91;
-                sl = (lastClose + 5.0).toFixed(2);
-                tp1 = (lastClose - 6.5).toFixed(2);
-                tp2 = (lastClose - 13.0).toFixed(2);
+                power = 97;
+                sl = (lastClose + 4.5).toFixed(2);
+                tp1 = (lastClose - 6.0).toFixed(2);
+                tp2 = (lastClose - 12.0).toFixed(2);
             } 
-            else if (!isHighNewsVolatility && !isRsiOverbought && !isStochOverbought && !isTooFarFromEMA && isBullishTrend && (isRetestingSupport || lastClose >= lastEMA20) && hasGoodVolume) {
-                signalText = "🟢 STRONG BUY";
+            // شرط الشراء عالي الدقة: تشبع بيعي قوي + اتجاه صاعد قوي + إعادة اختبار دعم + حجم تداول قوي
+            else if (!isHighNewsVolatility && (isRsiOversold && stochK < 20) && isBullishTrend && isRetestingSupport && hasGoodVolume) {
+                signalText = "🟢 HIGH-PRECISION BUY";
                 signalClass = "signal-buy";
-                power = 95;
-                sl = (lastClose - 5.0).toFixed(2);
-                tp1 = (lastClose + 6.5).toFixed(2);
-                tp2 = (lastClose + 13.0).toFixed(2);
+                power = 98;
+                sl = (lastClose - 4.5).toFixed(2);
+                tp1 = (lastClose + 6.0).toFixed(2);
+                tp2 = (lastClose + 12.0).toFixed(2);
             } 
             else {
-                signalText = "⚪ WAIT / PULLBACK";
+                signalText = "⚪ NO SETUP (WAITING)";
                 signalClass = "signal-wait";
-                power = 55;
+                power = 50;
             }
 
             signalTagElement.innerText = signalText;
@@ -480,7 +481,7 @@
                     }
                     lastPrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-                    statusElement.innerText = "● الشارت نظيف والمؤشرات مرتبة بنجاح";
+                    statusElement.innerText = "● الفلاتر الصارمة وعالية الدقة تعمل بانتظار الفرصة المثالية";
                 }
             } catch (err) {}
         }
