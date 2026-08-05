@@ -252,8 +252,8 @@
         <div class="chart-container">
             <div id="chart"></div>
         </div>
-    </div>
-        <script>
+            </div>
+      <script>
         const priceElement = document.getElementById('price');
         const statusElement = document.getElementById('status');
         const signalTagElement = document.getElementById('signalTag');
@@ -358,6 +358,7 @@
         function analyzeMarket(candles, rawVolumeData) {
             if (candles.length < 200) return;
 
+            // استخدام السعر الحي المحدث إذا وجد، وإلا إغلاق آخر شمعة
             const activePrice = lastLivePrice > 0 ? lastLivePrice : candles[candles.length - 1].close;
 
             const ema20Data = calculateEMA(candles, 20);
@@ -391,6 +392,7 @@
             volNewsVal.innerText = `VOL: ${lastVol.toFixed(0)} (${hasGoodVolume ? 'STRONG 🟢' : 'WEAK/CHOPPY ⚠️'})`;
             volNewsVal.style.color = hasGoodVolume ? "#22c55e" : "#ef4444";
 
+            // حساب مناطق الدعم والمقاومة بدقة وربطها بالعنصر
             const recentSlice = candles.slice(-30);
             const supportLevel = Math.min(...recentSlice.map(c => c.low));
             const resistanceLevel = Math.max(...recentSlice.map(c => c.high));
@@ -488,45 +490,16 @@
             }
         }
 
-        // دالة إرسال الإشعار إلى تيليجرام
-        async function sendTelegramAlert(setup) {
-            const botToken = "8942146381:AAHQIoG_6DumeZC74rfmQWUlifkslkTQx74"; 
-            const chatId = "1009314819"; 
-            
-            const message = `🚨 *تنبيه صفقة جديدة - Mika Pro* 🚨\n\n` + 
-                            `🔹 *النوع:* ${setup.type === 'BUY' ? 'شراء 🟢 (BUY)' : 'بيع 🔴 (SELL)'}\n` + 
-                            `🪙 *الزوج:* XAUUSDT (Bybit Futures)\n` + 
-                            `💰 *سعر الدخول:* $${setup.entry}\n` + 
-                            `🛡️ *وقف الخسارة (SL):* $${setup.sl}\n` + 
-                            `🎯 *الهدف الأول (TP1):* $${setup.tp1}\n` + 
-                            `🎯 *الهدف الثاني (TP2):* $${setup.tp2}\n` + 
-                            `⚡ *الحالة:* تم رصد الإشارة بنجاح!`;
-
-            const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-
-            try { 
-                await fetch(url, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ 
-                        chat_id: chatId, 
-                        text: message, 
-                        parse_mode: 'Markdown' 
-                    }) 
-                });
-            } catch (error) { 
-                console.error("فشل إرسال إشعار تيليجرام:", error);
-            }
-        }
-
         function executeOrder() {
             if (!currentTradeSetup) return;
-            
-            // إرسال الإشعار لتيليجرام تلقائياً
-            sendTelegramAlert(currentTradeSetup);
-
             const typeText = currentTradeSetup.type === 'BUY' ? 'شراء (BUY)' : 'بيع (SELL)';
-            alert(`✅ تم إرسال صفقة الـ ${typeText} وتنبيه تيليجرام بنجاح! 🚀`);
+            alert(`✅ تم إرسال وتفعيل صفقة الـ ${typeText} بنجاح!\n\n` +
+                  `🔹 الرمز: XAUUSDT (Bybit Futures)\n` +
+                  `🔹 سعر الدخول: $${currentTradeSetup.entry}\n` +
+                  `🛡️ وقف الخسارة (SL): $${currentTradeSetup.sl}\n` +
+                  `🎯 الهدف الأول (TP1): $${currentTradeSetup.tp1}\n` +
+                  `🎯 الهدف الثاني (TP2): $${currentTradeSetup.tp2}\n\n` +
+                  `بالتوفيق في تداولاتك! 🚀`);
         }
 
         async function loadChartData() {
