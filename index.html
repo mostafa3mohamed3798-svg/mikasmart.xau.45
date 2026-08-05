@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold - High Precision EMA 50 Engine</title>
+    <title>Mika Pro Gold - Anti-Choppy Precision Engine</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -183,14 +183,14 @@
 <body>
 
     <div class="top-price-card">
-        <div class="header-title">🤖 Mika Pro Gold - High Precision Engine</div>
+        <div class="header-title">🤖 Mika Pro Gold - Anti-Choppy Engine</div>
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● نظام تحليل الثقة المحسن نشط...</div>
+        <div id="status" class="status-badge">● الفلتر الآمن للتذبذب مفعل (حماية قصوى)...</div>
         
         <div class="signal-container">
-            <span id="signalTag" class="signal-tag signal-wait">⚪ ANALYZING MARKET...</span>
+            <span id="signalTag" class="signal-tag signal-wait">🛡️ WAITING FOR CLEAR SETUP...</span>
             <span class="signal-power">نسبة الثقة المحسوبة: <strong id="signalPower" style="color: #fff;">0%</strong></span>
         </div>
 
@@ -202,7 +202,7 @@
 
         <div class="trade-action-box">
             <button id="executeBtn" class="execute-btn" disabled onclick="executeOrder()">
-                ⏳ بانتظار إشارة فنية عالية الدقة...
+                🛡️ السوق متذبذب - لا توجد صفقات آمنة حالياً
             </button>
         </div>
     </div>
@@ -387,48 +387,39 @@
             const recentVols = rawVolumeData.slice(-20);
             const avgVol = recentVols.reduce((acc, curr) => acc + curr.value, 0) / 20;
             const lastVol = rawVolumeData[rawVolumeData.length - 1].value;
-            const hasGoodVolume = lastVol >= avgVol * 0.80;
+            
+            const hasGoodVolume = lastVol >= avgVol * 1.05;
 
-            volNewsVal.innerText = `VOL: ${lastVol.toFixed(0)} (${hasGoodVolume ? 'HIGH 🟢' : 'LOW ⚠️'})`;
+            volNewsVal.innerText = `VOL: ${lastVol.toFixed(0)} (${hasGoodVolume ? 'STRONG 🟢' : 'WEAK/CHOPPY ⚠️'})`;
             volNewsVal.style.color = hasGoodVolume ? "#22c55e" : "#ef4444";
 
             const recentSlice = candles.slice(-30);
             const supportLevel = Math.min(...recentSlice.map(c => c.low));
             const resistanceLevel = Math.max(...recentSlice.map(c => c.high));
-            const nearSupport = Math.abs(lastClose - supportLevel) < 6.0;
-            const nearResistance = Math.abs(lastClose - resistanceLevel) < 6.0;
-
-            srRetestVal.innerText = nearSupport ? "NEAR SUPPORT 🟢" : (nearResistance ? "NEAR RESISTANCE 🔴" : "MID-RANGE ⚖️");
-            srRetestVal.style.color = nearSupport ? "#22c55e" : (nearResistance ? "#ef4444" : "#94a3b8");
-
+            
             const isBullishTrend = lastClose > lastEMA50 && lastEMA50 > lastEMA200;
             const isBearishTrend = lastClose < lastEMA50 && lastEMA50 < lastEMA200;
 
-            emaTrendVal.innerText = isBullishTrend ? "BULLISH TREND 🟢" : (isBearishTrend ? "BEARISH TREND 🔴" : "SIDEWAYS ⚖️");
+            emaTrendVal.innerText = isBullishTrend ? "BULLISH TREND 🟢" : (isBearishTrend ? "BEARISH TREND 🔴" : "SIDEWAYS/CHOPPY ⚖️");
             emaTrendVal.style.color = isBullishTrend ? "#22c55e" : (isBearishTrend ? "#ef4444" : "#94a3b8");
 
-            let signalText = "⚪ WAITING FOR STRONG SETUP...";
+            let signalText = "🛡️ MARKET CHOPPY / WAITING...";
             let signalClass = "signal-wait";
             let confidenceScore = 0; 
             let sl = "---", tp1 = "---", tp2 = "---";
 
-            const isSellOpportunity = (rsiVal >= 58 && stochK >= 60);
-            const isBuyOpportunity = (rsiVal <= 42 && stochK <= 40);
+            const isSellOpportunity = isBearishTrend && rsiVal >= 60 && stochK >= 65 && hasGoodVolume;
+            const isBuyOpportunity = isBullishTrend && rsiVal <= 40 && stochK <= 35 && hasGoodVolume;
 
             if (isSellOpportunity) {
-                confidenceScore = 40; 
-                if (rsiVal >= 65) confidenceScore += 15;
-                if (stochK >= 75) confidenceScore += 15;
-                if (nearResistance) confidenceScore += 15;
-                if (hasGoodVolume) confidenceScore += 10;
-                if (isBearishTrend) confidenceScore += 5; 
+                confidenceScore = 70; 
+                if (rsiVal >= 68) confidenceScore += 15;
+                if (stochK >= 80) confidenceScore += 10;
+                if (lastVol >= avgVol * 1.5) confidenceScore += 5;
 
-                if (isBullishTrend) confidenceScore -= 20;
-                if (!hasGoodVolume) confidenceScore -= 10;
+                confidenceScore = Math.min(confidenceScore, 98);
 
-                confidenceScore = Math.max(20, Math.min(confidenceScore, 96));
-
-                signalText = "🔴 SELL SIGNAL (SHORT)";
+                signalText = "🔴 HIGH PROBABILITY SELL";
                 signalClass = "signal-sell";
 
                 const slPrice = lastClose + 5.5;
@@ -446,19 +437,14 @@
                 executeBtn.innerText = `📉 تنفيذ صفقة بيع (SELL) - ثقة ${confidenceScore}%`;
 
             } else if (isBuyOpportunity) {
-                confidenceScore = 40;
-                if (rsiVal <= 35) confidenceScore += 15;
-                if (stochK <= 25) confidenceScore += 15;
-                if (nearSupport) confidenceScore += 15;
-                if (hasGoodVolume) confidenceScore += 10;
-                if (isBullishTrend) confidenceScore += 5;
+                confidenceScore = 70;
+                if (rsiVal <= 32) confidenceScore += 15;
+                if (stochK <= 20) confidenceScore += 10;
+                if (lastVol >= avgVol * 1.5) confidenceScore += 5;
 
-                if (isBearishTrend) confidenceScore -= 20;
-                if (!hasGoodVolume) confidenceScore -= 10;
+                confidenceScore = Math.min(confidenceScore, 98);
 
-                confidenceScore = Math.max(20, Math.min(confidenceScore, 96));
-
-                signalText = "🟢 BUY SIGNAL (LONG)";
+                signalText = "🟢 HIGH PROBABILITY BUY";
                 signalClass = "signal-buy";
 
                 const slPrice = lastClose - 5.5;
@@ -479,7 +465,7 @@
                 currentTradeSetup = null;
                 executeBtn.disabled = true;
                 executeBtn.className = "execute-btn";
-                executeBtn.innerText = "⏳ بانتظار إشارة فنية عالية الدقة...";
+                executeBtn.innerText = "🛡️ السوق متذبذب - لا توجد صفقات آمنة حالياً";
             }
 
             signalTagElement.innerText = signalText;
@@ -560,7 +546,7 @@
                     }
                     lastPrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-                    statusElement.innerText = "● محرك الثقة الفني يعمل بكفاءة ودقة عالية";
+                    statusElement.innerText = "● الفلتر الآمن للتذبذب مفعل (حماية قصوى)";
                 }
             } catch (err) {}
         }
