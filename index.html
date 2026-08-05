@@ -3,46 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Smart AI - XAUUSD</title>
+    <title>Mika Smart AI - XAUUSD Live</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background-color: #0b0f19; color: #fff; font-family: system-ui, -apple-system, sans-serif; padding: 12px; display: flex; flex-direction: column; align-items: center; }
+        body { 
+            background-color: #0b0f19; 
+            color: #fff; 
+            font-family: system-ui, -apple-system, sans-serif; 
+            padding: 12px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
         
-        .top-price-card { background: linear-gradient(145deg, #151c2c, #0e1420); border-radius: 16px; padding: 20px; width: 100%; max-width: 500px; text-align: center; border: 1px solid #232d42; box-shadow: 0 8px 20px rgba(0,0,0,0.4); margin-bottom: 12px; }
+        /* كارت السعر العلوي من TradingView */
+        .top-price-card { 
+            background: linear-gradient(145deg, #151c2c, #0e1420); 
+            border-radius: 16px; 
+            padding: 15px; 
+            width: 100%; 
+            max-width: 500px; 
+            text-align: center; 
+            border: 1px solid #232d42; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4); 
+            margin-bottom: 12px; 
+        }
+        
         .header-title { font-size: 1.2rem; font-weight: bold; color: #10b981; margin-bottom: 4px; }
-        .symbol-name { font-size: 0.9rem; color: #94a3b8; margin-bottom: 12px; }
-        .price-display { font-size: 2.5rem; font-weight: 800; color: #f59e0b; letter-spacing: 1px; margin: 8px 0; line-height: 1; }
-        .status-badge { font-size: 0.8rem; color: #10b981; margin-top: 6px; }
+        .symbol-name { font-size: 0.85rem; color: #94a3b8; margin-bottom: 10px; }
         
-        .signal-container { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #1e293b; }
+        /* حاوية أداة السعر المباشر */
+        .tv-single-price {
+            width: 100%;
+            height: 70px;
+            margin: 5px 0;
+        }
+        
+        .signal-container { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            gap: 15px; 
+            margin-top: 10px; 
+            padding-top: 10px; 
+            border-top: 1px solid #1e293b; 
+        }
         .signal-tag { background-color: rgba(34, 197, 94, 0.15); color: #22c55e; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 0.95rem; }
         .signal-power { color: #94a3b8; font-size: 0.9rem; }
 
-        .chart-container { background: #151c2c; border-radius: 16px; padding: 8px; width: 100%; max-width: 500px; border: 1px solid #232d42; height: 440px; }
+        /* الشارت */
+        .chart-container { background: #151c2c; border-radius: 16px; padding: 8px; width: 100%; max-width: 500px; border: 1px solid #232d42; height: 420px; }
     </style>
 </head>
 <body>
 
+    <!-- كارت السعر العلوي المباشر من TradingView -->
     <div class="top-price-card">
         <div class="header-title">🤖 Mika Smart AI</div>
-        <div class="symbol-name">Binance Futures - XAU/USDT</div>
+        <div class="symbol-name">سعر الذهب العالمي المباشر (TradingView)</div>
         
-        <div id="price" class="price-display">جاري الاتصال...</div>
-        <div id="status" class="status-badge">● جاري فتح بث الأسعار المباشر...</div>
-        
+        <!-- ويدجت السعر اللحظي من ترادينج فيو -->
+        <div class="tv-single-price">
+            <div class="tradingview-widget-container">
+              <div class="tradingview-widget-container__widget"></div>
+              <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
+              {
+              "symbol": "TVC:GOLD",
+              "width": "100%",
+              "isTransparent": true,
+              "colorTheme": "dark",
+              "locale": "ar"
+            }
+              </script>
+            </div>
+        </div>
+
         <div class="signal-container">
             <span class="signal-tag">🟢 BUY</span>
             <span class="signal-power">قوة الإشارة: <strong style="color: #fff;">91%</strong></span>
         </div>
     </div>
 
+    <!-- الرسم البياني الرئيسي -->
     <div class="chart-container">
         <div id="tradingview_chart" style="height:100%;width:100%;"></div>
         <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
         <script type="text/javascript">
             new TradingView.widget({
                 "autosize": true,
-                "symbol": "BINANCE:XAUUSDT",
+                "symbol": "TVC:GOLD",
                 "interval": "15",
                 "timezone": "Etc/UTC",
                 "theme": "dark",
@@ -56,42 +105,6 @@
             });
         </script>
     </div>
-
-    <script>
-        const priceElement = document.getElementById('price');
-        const statusElement = document.getElementById('status');
-
-        function connectBinanceStream() {
-            // استخدام WebSocket للبث المباشر بدون CORS وبدون حظر
-            const ws = new WebSocket('wss://fstream.binance.com/ws/xauusdt@ticker');
-
-            ws.onopen = () => {
-                statusElement.innerText = "● سعر مباشر لحظي (Binance Stream)";
-                statusElement.style.color = "#10b981";
-            };
-
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                if (data && data.c) { // c تعني السعر الحالي (Current Close Price)
-                    const livePrice = parseFloat(data.c).toFixed(2);
-                    priceElement.innerText = `$${livePrice}`;
-                }
-            };
-
-            ws.onerror = (err) => {
-                console.error("WS Error:", err);
-                statusElement.innerText = "⚠️ جاري إعادة محاولة الاتصال...";
-                statusElement.style.color = "#ef4444";
-            };
-
-            ws.onclose = () => {
-                // إعادة الاتصال تلقائياً في حالة انقطاع النت
-                setTimeout(connectBinanceStream, 3000);
-            };
-        }
-
-        connectBinanceStream();
-    </script>
 
 </body>
 </html>
