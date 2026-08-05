@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold Engine - Clean</title>
+    <title>Mika Pro Gold Engine - Advanced Analysis</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -45,12 +45,13 @@
         
         .signal-container { 
             display: flex; 
-            justify-content: center; 
+            justify-content: space-around; 
             align-items: center; 
-            gap: 15px; 
-            margin-top: 10px; 
-            padding-top: 10px; 
+            margin-top: 12px; 
+            padding-top: 12px; 
             border-top: 1px solid #1e293b; 
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .signal-tag { 
@@ -58,15 +59,24 @@
             border-radius: 20px; 
             font-weight: bold; 
             font-size: 0.95rem; 
-            transition: all 0.3s ease;
         }
         .signal-buy { background-color: rgba(34, 197, 94, 0.18); color: #22c55e; border: 1px solid #22c55e; }
         .signal-sell { background-color: rgba(239, 68, 68, 0.18); color: #ef4444; border: 1px solid #ef4444; }
         .signal-wait { background-color: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid #94a3b8; }
 
-        .signal-power { color: #94a3b8; font-size: 0.9rem; }
+        .targets-box {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 10px;
+            background: #0e1420;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #1e293b;
+            font-size: 0.85rem;
+        }
+        .target-item span { color: #f59e0b; font-weight: bold; }
 
-        /* شبكة الفلاتر الموسعة */
         .filters-dashboard {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -111,21 +121,21 @@
             border: 1px solid #1e293b;
         }
 
-        .tf-group, .indicator-group { display: flex; gap: 4px; }
+        .tf-group, .indicator-group { display: flex; gap: 4px; flex-wrap: wrap; }
 
         .tf-btn, .indicator-btn {
             background: #1e293b;
             color: #94a3b8;
             border: 1px solid #334155;
-            padding: 5px 10px;
+            padding: 5px 8px;
             border-radius: 6px;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 600;
             cursor: pointer;
         }
 
         .tf-btn.active { background: #10b981; color: #0b0f19; border-color: #10b981; }
-        .btn-ema.active { background: rgba(255, 183, 3, 0.2); color: #ffb703; border-color: #ffb703; }
+        .btn-ema.active { background: rgba(59, 130, 246, 0.2); color: #3b82f6; border-color: #3b82f6; }
         .btn-vol.active { background: rgba(16, 185, 129, 0.2); color: #10b981; border-color: #10b981; }
 
         .chart-container { 
@@ -143,26 +153,31 @@
 <body>
 
     <div class="top-price-card">
-        <div class="header-title">🤖 Mika Pro Gold Engine</div>
+        <div class="header-title">🤖 Mika Pro Gold Engine - Advanced Analysis</div>
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● الفلاتر الذكية نشطة...</div>
+        <div id="status" class="status-badge">● تحليل مؤشرات حقيقي نشط...</div>
         
         <div class="signal-container">
             <span id="signalTag" class="signal-tag signal-wait">⚪ ANALYZING...</span>
             <span class="signal-power">التوافق: <strong id="signalPower" style="color: #fff;">0%</strong></span>
         </div>
+
+        <div class="targets-box">
+            <div class="target-item">وقف خسارة (SL): <span id="slVal">---</span></div>
+            <div class="target-item">هدف أول (TP1): <span id="tp1Val">---</span></div>
+            <div class="target-item">هدف ثاني (TP2): <span id="tp2Val">---</span></div>
+        </div>
     </div>
 
-    <!-- شبكة الفلاتر الشاملة -->
     <div class="filters-dashboard">
         <div class="filter-card">
-            <div class="filter-label">📊 RSI FILTER (>75 Block)</div>
+            <div class="filter-label">📊 RSI ANALYZER (Max 75)</div>
             <div id="rsiFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">⚡ STOCHASTIC (>90 Block)</div>
+            <div class="filter-label">⚡ STOCHASTIC (Max 90)</div>
             <div id="stochFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
@@ -170,16 +185,16 @@
             <div id="emaDistVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
+            <div class="filter-label">📈 EMA 50 & 200 TREND</div>
+            <div id="emaTrendVal" class="filter-value" style="color: #94a3b8;">--</div>
+        </div>
+        <div class="filter-card">
             <div class="filter-label">🛡️ S/R & RETEST ZONE</div>
             <div id="srRetestVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">💧 VOLUME LIQUIDITY</div>
-            <div id="volFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
-        </div>
-        <div class="filter-card">
-            <div class="filter-label">📰 NEWS & VOLATILITY</div>
-            <div id="newsFilterVal" class="filter-value" style="color: #22c55e;">SAFE 🟢</div>
+            <div class="filter-label">💧 VOLUME & NEWS FILTER</div>
+            <div id="volNewsVal" class="filter-value" style="color: #22c55e;">SAFE 🟢</div>
         </div>
     </div>
 
@@ -193,7 +208,7 @@
                 <button class="tf-btn" onclick="changeTimeframe('240')">4h</button>
             </div>
             <div class="indicator-group">
-                <button id="emaToggle" class="indicator-btn btn-ema active" onclick="toggleEMA()">EMA 20/50</button>
+                <button id="emaToggle" class="indicator-btn btn-ema active" onclick="toggleEMA()">EMA 20/50/200</button>
                 <button id="volToggle" class="indicator-btn btn-vol active" onclick="toggleVolume()">Volume</button>
             </div>
         </div>
@@ -202,19 +217,22 @@
             <div id="chart"></div>
         </div>
     </div>
-
-    <script>
+        <script>
         const priceElement = document.getElementById('price');
         const statusElement = document.getElementById('status');
         const signalTagElement = document.getElementById('signalTag');
         const signalPowerElement = document.getElementById('signalPower');
+        
+        const slValElement = document.getElementById('slVal');
+        const tp1ValElement = document.getElementById('tp1Val');
+        const tp2ValElement = document.getElementById('tp2Val');
 
         const rsiFilterVal = document.getElementById('rsiFilterVal');
         const stochFilterVal = document.getElementById('stochFilterVal');
         const emaDistVal = document.getElementById('emaDistVal');
+        const emaTrendVal = document.getElementById('emaTrendVal');
         const srRetestVal = document.getElementById('srRetestVal');
-        const volFilterVal = document.getElementById('volFilterVal');
-        const newsFilterVal = document.getElementById('newsFilterVal');
+        const volNewsVal = document.getElementById('volNewsVal');
         
         let lastPrice = 0;
         let currentTimeframe = '15';
@@ -238,6 +256,7 @@
 
         const ema20Series = chart.addLineSeries({ color: '#3b82f6', lineWidth: 2, priceLineVisible: false });
         const ema50Series = chart.addLineSeries({ color: '#ffb703', lineWidth: 2, priceLineVisible: false });
+        const ema200Series = chart.addLineSeries({ color: '#ec4899', lineWidth: 3, priceLineVisible: false });
 
         function calculateEMA(candles, period) {
             if (candles.length < period) return [];
@@ -254,6 +273,7 @@
         }
 
         function calculateRSI(candles, period = 14) {
+            if (candles.length <= period) return 50;
             let gains = 0, losses = 0;
             for (let i = 1; i <= period; i++) {
                 let diff = candles[i].close - candles[i - 1].close;
@@ -278,6 +298,7 @@
         }
 
         function calculateStochastic(candles, period = 14) {
+            if (candles.length < period) return 50;
             const slice = candles.slice(-period);
             const currentClose = candles[candles.length - 1].close;
             const lowestLow = Math.min(...slice.map(c => c.low));
@@ -285,109 +306,124 @@
             return ((currentClose - lowestLow) / ((highestHigh - lowestLow) || 1)) * 100;
         }
 
-        function evaluateProFilters(candles, rawVolumeData) {
-            if (candles.length < 50) return;
+        function analyzeMarket(candles, rawVolumeData) {
+            if (candles.length < 200) return;
 
             const lastCandle = candles[candles.length - 1];
             const lastClose = lastCandle.close;
 
-            // المتوسطات
             const ema20Data = calculateEMA(candles, 20);
             const ema50Data = calculateEMA(candles, 50);
-            const lastEMA20 = ema20Data[ema20Data.length - 1].value;
+            const ema200Data = calculateEMA(candles, 200);
 
-            // 1. فلتر المسافة عن EMA 20 (أكثر من 12 دولار = انتظار رجوع السعر)
+            const lastEMA20 = ema20Data[ema20Data.length - 1].value;
+            const lastEMA50 = ema50Data[ema50Data.length - 1].value;
+            const lastEMA200 = ema200Data[ema200Data.length - 1].value;
+
             const distFromEMA20 = lastClose - lastEMA20;
             const absDist = Math.abs(distFromEMA20);
-            const isTooFarFromEMA = absDist > 12;
+            const isTooFarFromEMA = absDist > 14;
 
             emaDistVal.innerText = `${distFromEMA20 > 0 ? '+' : ''}${distFromEMA20.toFixed(1)}$`;
             if (isTooFarFromEMA) {
-                emaDistVal.innerText += " (WAIT PULLBACK ⏳)";
+                emaDistVal.innerText += " (EXTENDED ⏳)";
                 emaDistVal.style.color = "#f59e0b";
             } else {
-                emaDistVal.innerText += " (GOOD 🟢)";
+                emaDistVal.innerText += " (IDEAL 🟢)";
                 emaDistVal.style.color = "#22c55e";
             }
 
-            // 2. فلتر RSI (يمنع الشراء إذا أكبر من 75)
+            const isBullishTrend = lastEMA50 > lastEMA200 && lastClose > lastEMA200;
+            emaTrendVal.innerText = isBullishTrend ? "BULLISH (50>200) 🟢" : "BEARISH/RANGING ⚠️";
+            emaTrendVal.style.color = isBullishTrend ? "#22c55e" : "#ef4444";
+
             const rsiVal = calculateRSI(candles, 14);
             const isRsiOverbought = rsiVal > 75;
-            rsiFilterVal.innerText = `${rsiVal.toFixed(1)} ${isRsiOverbought ? '🚫 (>75)' : '🟢'}`;
+            rsiFilterVal.innerText = `${rsiVal.toFixed(1)} ${isRsiOverbought ? '🚫 (OVERBOUGHT >75)' : '🟢 SAFE'}`;
             rsiFilterVal.style.color = isRsiOverbought ? "#ef4444" : "#22c55e";
 
-            // 3. فلتر Stochastic (يمنع الشراء إذا أكبر من 90)
             const stochK = calculateStochastic(candles, 14);
             const isStochOverbought = stochK > 90;
-            stochFilterVal.innerText = `%K: ${stochK.toFixed(1)} ${isStochOverbought ? '🚫 (>90)' : '🟢'}`;
+            stochFilterVal.innerText = `%K: ${stochK.toFixed(1)} ${isStochOverbought ? '🚫 (OVERBOUGHT >90)' : '🟢 SAFE'}`;
             stochFilterVal.style.color = isStochOverbought ? "#ef4444" : "#22c55e";
 
-            // 4. فلتر حجم التداول (Volume)
             const recentVols = rawVolumeData.slice(-20);
             const avgVol = recentVols.reduce((acc, curr) => acc + curr.value, 0) / 20;
             const lastVol = rawVolumeData[rawVolumeData.length - 1].value;
-            const hasGoodVolume = lastVol > avgVol * 0.8;
-            volFilterVal.innerText = hasGoodVolume ? "OPTIMAL 💧" : "LOW ⚠️";
-            volFilterVal.style.color = hasGoodVolume ? "#22c55e" : "#f59e0b";
+            const hasGoodVolume = lastVol > avgVol * 0.75;
 
-            // 5. فلتر مناطق الدعم والمقاومة وإعادة الاختبار (S/R & Retest)
             const recentSlice = candles.slice(-30);
-            const supportLevel = Math.min(...recentSlice.map(c => c.low));
-            const nearSupport = Math.abs(lastClose - supportLevel) < 4;
-            const isRetesting = nearSupport && lastCandle.low <= supportLevel + 1.5;
-
-            srRetestVal.innerText = isRetesting ? "RETEST ZONE 🎯" : "MID-RANGE ⚖️";
-            srRetestVal.style.color = isRetesting ? "#3b82f6" : "#94a3b8";
-
-            // 6. فلتر الأخبار القوية (تقدير بناءً على التذبذب الحاد المفاجئ في الشموع الأخيرة)
             const lastCandleBody = Math.abs(lastCandle.close - lastCandle.open);
             const avgBody = recentSlice.reduce((acc, c) => acc + Math.abs(c.close - c.open), 0) / recentSlice.length;
-            const isHighNewsVolatility = lastCandleBody > (avgBody * 2.5);
-            
+            const isHighNewsVolatility = lastCandleBody > (avgBody * 2.8);
+
             if (isHighNewsVolatility) {
-                newsFilterVal.innerText = "HIGH NEWS ⚡ (WAIT)";
-                newsFilterVal.style.color = "#ef4444";
+                volNewsVal.innerText = "NEWS VOLATILITY ⚡";
+                volNewsVal.style.color = "#ef4444";
             } else {
-                newsFilterVal.innerText = "SAFE 🟢";
-                newsFilterVal.style.color = "#22c55e";
+                volNewsVal.innerText = hasGoodVolume ? "VOLUME & NEWS SAFE 🟢" : "LOW VOLUME ⚠️";
+                volNewsVal.style.color = hasGoodVolume ? "#22c55e" : "#f59e0b";
             }
 
-            // محرك القرار الصارم
-            let canBuy = true;
-            if (isRsiOverbought || isStochOverbought || isTooFarFromEMA || isHighNewsVolatility) {
-                canBuy = false;
-            }
+            const supportLevel = Math.min(...recentSlice.map(c => c.low));
+            const resistanceLevel = Math.max(...recentSlice.map(c => c.high));
+            const nearSupport = Math.abs(lastClose - supportLevel) < 4.5;
+            const nearResistance = Math.abs(lastClose - resistanceLevel) < 4.5;
+            const isRetestingSupport = nearSupport && lastCandle.low <= supportLevel + 1.8;
+            const isRetestingResistance = nearResistance && lastCandle.high >= resistanceLevel - 1.8;
+
+            srRetestVal.innerText = isRetestingSupport ? "SUPPORT RETEST 🎯" : (isRetestingResistance ? "RESISTANCE RETEST 🎯" : "MID-RANGE ⚖️");
+            srRetestVal.style.color = (isRetestingSupport || isRetestingResistance) ? "#3b82f6" : "#94a3b8";
 
             let signalText = "⚪ WAIT / NEUTRAL";
             let signalClass = "signal-wait";
-            let power = 45;
+            let power = 50;
+            let sl = "---", tp1 = "---", tp2 = "---";
 
-            if (canBuy && (isRetesting || lastClose >= lastEMA20) && hasGoodVolume) {
+            if (!isHighNewsVolatility && (isRsiOverbought || isStochOverbought || (nearResistance && isRetestingResistance))) {
+                signalText = "🔴 SELL SIGNAL";
+                signalClass = "signal-sell";
+                power = 89;
+                sl = (lastClose + 5.5).toFixed(2);
+                tp1 = (lastClose - 7.0).toFixed(2);
+                tp2 = (lastClose - 14.0).toFixed(2);
+            } 
+            else if (!isHighNewsVolatility && !isRsiOverbought && !isStochOverbought && !isTooFarFromEMA && isBullishTrend && (isRetestingSupport || lastClose >= lastEMA20) && hasGoodVolume) {
                 signalText = "🟢 STRONG BUY";
                 signalClass = "signal-buy";
-                power = 90;
-            } else if (!canBuy) {
-                signalText = "🔴 BLOCKED (CONDitions NOT MET)";
-                signalClass = "signal-sell";
-                power = 85;
+                power = 93;
+                sl = (lastClose - 5.5).toFixed(2);
+                tp1 = (lastClose + 7.0).toFixed(2);
+                tp2 = (lastClose + 14.0).toFixed(2);
+            } 
+            else {
+                signalText = "⚪ WAIT / PULLBACK";
+                signalClass = "signal-wait";
+                power = 55;
             }
 
             signalTagElement.innerText = signalText;
             signalTagElement.className = `signal-tag ${signalClass}`;
             signalPowerElement.innerText = `${power}%`;
 
+            slValElement.innerText = sl !== "---" ? `$${sl}` : "---";
+            tp1ValElement.innerText = tp1 !== "---" ? `$${tp1}` : "---";
+            tp2ValElement.innerText = tp2 !== "---" ? `$${tp2}` : "---";
+
             if (showEMAs) {
                 ema20Series.setData(ema20Data);
                 ema50Series.setData(ema50Data);
+                ema200Series.setData(ema200Data);
             } else {
                 ema20Series.setData([]);
                 ema50Series.setData([]);
+                ema200Series.setData([]);
             }
         }
 
         async function loadChartData() {
             try {
-                const res = await fetch(`https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${currentTimeframe}&limit=200`);
+                const res = await fetch(`https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${currentTimeframe}&limit=250`);
                 const data = await res.json();
 
                 if (data && data.retCode === 0 && data.result && data.result.list) {
@@ -410,10 +446,10 @@
                     if (showVolume) volumeSeries.setData(volumes);
                     else volumeSeries.setData([]);
 
-                    evaluateProFilters(candles, volumes);
+                    analyzeMarket(candles, volumes);
 
                     chart.timeScale().setVisibleLogicalRange({
-                        from: candles.length - 35,
+                        from: candles.length - 40,
                         to: candles.length - 1
                     });
                 }
@@ -432,7 +468,7 @@
                     }
                     lastPrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-                    statusElement.innerText = "● الفلاتر تعمل حياً بدون توكن";
+                    statusElement.innerText = "● التحليل الفني المؤشراتي يعمل بدقة";
                 }
             } catch (err) {}
         }
