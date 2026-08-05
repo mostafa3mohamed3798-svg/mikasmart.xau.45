@@ -6,7 +6,7 @@
     <title>Mika Smart AI - XAUUSD</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background-color: #0b0f19; color: #fff; font-family: system-ui, sans-serif; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        body { background-color: #0b0f19; color: #fff; font-family: system-ui, -apple-system, sans-serif; padding: 15px; display: flex; flex-direction: column; align-items: center; }
         
         .main-card { background: #151c2c; border-radius: 16px; padding: 20px; width: 100%; max-width: 450px; text-align: center; border: 1px solid #232d42; box-shadow: 0 10px 25px rgba(0,0,0,0.5); margin-bottom: 15px; }
         .logo-title { font-size: 1.4rem; font-weight: bold; color: #10b981; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
@@ -19,7 +19,7 @@
         
         .btn { width: 100%; padding: 12px; background: #10b981; color: #000; font-weight: bold; font-size: 1.05rem; border: none; border-radius: 10px; cursor: pointer; }
         
-        .chart-card { background: #151c2c; border-radius: 16px; padding: 10px; width: 100%; max-width: 450px; border: 1px solid #232d42; height: 400px; }
+        .chart-card { background: #151c2c; border-radius: 16px; padding: 10px; width: 100%; max-width: 450px; border: 1px solid #232d42; height: 420px; }
         .tradingview-widget-container { height: 100%; width: 100%; }
     </style>
 </head>
@@ -27,15 +27,15 @@
 
     <div class="main-card">
         <div class="logo-title">🤖 Mika Smart AI</div>
-        <div class="symbol">XAU/USD - الذهب الفوري (Spot)</div>
+        <div class="symbol">XAU/USD - الذهب مقابل الدولار (Spot)</div>
         
-        <!-- TradingView Single Quote Widget -->
+        <!-- TradingView Single Quote Widget (السعر الحي الدقيق) -->
         <div class="price-container">
             <div class="tradingview-widget-container">
               <div class="tradingview-widget-container__widget"></div>
               <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
               {
-              "symbol": "FX_IDC:XAUUSD",
+              "symbol": "FX:XAUUSD",
               "width": "100%",
               "colorTheme": "dark",
               "isTransparent": true,
@@ -54,15 +54,15 @@
     </div>
 
     <div class="chart-card">
-        <!-- TradingView Chart Widget -->
+        <!-- TradingView Advanced Chart Widget (فريم 15 دقيقة) -->
         <div class="tradingview-widget-container">
           <div id="tradingview_chart" style="height:100%;width:100%;"></div>
           <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
           <script type="text/javascript">
           new TradingView.widget({
             "autosize": true,
-            "symbol": "FX_IDC:XAUUSD",
-            "interval": "1",
+            "symbol": "FX:XAUUSD",
+            "interval": "15",
             "timezone": "Etc/UTC",
             "theme": "dark",
             "style": "1",
