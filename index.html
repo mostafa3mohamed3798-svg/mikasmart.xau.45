@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold Engine - High Precision</title>
+    <title>Mika Pro Gold Engine - Dynamic Scoring</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -153,15 +153,15 @@
 <body>
 
     <div class="top-price-card">
-        <div class="header-title">🤖 Mika Pro Gold Engine - Ultra Precision</div>
+        <div class="header-title">🤖 Mika Pro Gold Engine - Dynamic Score</div>
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● فلاتر دقة مؤسسية نشطة...</div>
+        <div id="status" class="status-badge">● محرك التوافق الديناميكي نشط...</div>
         
         <div class="signal-container">
-            <span id="signalTag" class="signal-tag signal-wait">⚪ SCANNING SETUP...</span>
-            <span class="signal-power">مستوى الدقة: <strong id="signalPower" style="color: #fff;">0%</strong></span>
+            <span id="signalTag" class="signal-tag signal-wait">⚪ ANALYZING...</span>
+            <span class="signal-power">درجة التوافق: <strong id="signalPower" style="color: #fff;">0%</strong></span>
         </div>
 
         <div class="targets-box">
@@ -173,19 +173,19 @@
 
     <div class="filters-dashboard">
         <div class="filter-card">
-            <div class="filter-label">📊 RSI (Strict Zone)</div>
+            <div class="filter-label">📊 RSI SCORE</div>
             <div id="rsiFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">⚡ STOCHASTIC (Strict Zone)</div>
+            <div class="filter-label">⚡ STOCHASTIC SCORE</div>
             <div id="stochFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">📏 EXACT DISTANCE FROM EMA 20</div>
+            <div class="filter-label">📏 DISTANCE FROM EMA 20</div>
             <div id="emaDistVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">📈 EMA 50 & 200 TREND</div>
+            <div class="filter-label">📈 EMA TREND ALIGNMENT</div>
             <div id="emaTrendVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
@@ -193,7 +193,7 @@
             <div id="srRetestVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">💧 VOLUME & NEWS FILTER</div>
+            <div class="filter-label">💧 VOLUME FILTER</div>
             <div id="volNewsVal" class="filter-value" style="color: #22c55e;">SAFE 🟢</div>
         </div>
     </div>
@@ -330,89 +330,84 @@
 
             const distFromEMA20 = lastClose - lastEMA20;
             const absDist = Math.abs(distFromEMA20);
-            const isTooFarFromEMA = absDist > 10; // معيار أضيق لزيادة الدقة
 
             emaDistVal.innerText = `${distFromEMA20 > 0 ? '+' : ''}${distFromEMA20.toFixed(2)}$`;
-            if (isTooFarFromEMA) {
-                emaDistVal.innerText += " (EXTENDED ⏳)";
-                emaDistVal.style.color = "#f59e0b";
-            } else {
-                emaDistVal.innerText += " (IDEAL 🟢)";
-                emaDistVal.style.color = "#22c55e";
-            }
+            emaDistVal.style.color = absDist <= 8 ? "#22c55e" : "#f59e0b";
 
-            const isBullishTrend = lastEMA50 > lastEMA200 && lastClose > lastEMA200;
-            emaTrendVal.innerText = isBullishTrend ? "BULLISH (Strict) 🟢" : "BEARISH/RANGING ⚠️";
+            const isBullishTrend = lastEMA50 > lastEMA200;
+            emaTrendVal.innerText = isBullishTrend ? "BULLISH TREND 🟢" : "BEARISH TREND 🔴";
             emaTrendVal.style.color = isBullishTrend ? "#22c55e" : "#ef4444";
 
             const rsiVal = calculateRSI(candles, 14);
-            const isRsiOverbought = rsiVal > 72; // معيار مؤسسي صارم للبيع
-            const isRsiOversold = rsiVal < 28;  // معيار مؤسسي صارم للشراء
-            rsiFilterVal.innerText = `${rsiVal.toFixed(1)} ${isRsiOverbought ? '🚫 (STRICT >72)' : (isRsiOversold ? '🔵 (STRICT <28)' : '⚖️ NEUTRAL')}`;
-            rsiFilterVal.style.color = isRsiOverbought ? "#ef4444" : (isRsiOversold ? "#3b82f6" : "#94a3b8");
+            rsiFilterVal.innerText = `${rsiVal.toFixed(1)} (${rsiVal < 40 ? 'OVERSOLD 🟢' : (rsiVal > 60 ? 'OVERBOUGHT 🔴' : 'NEUTRAL ⚖️')})`;
+            rsiFilterVal.style.color = rsiVal < 40 ? "#22c55e" : (rsiVal > 60 ? "#ef4444" : "#94a3b8");
 
             const stochK = calculateStochastic(candles, 14);
-            const isStochOverbought = stochK > 85;
-            const isStochOversold = stochK < 15;
-            stochFilterVal.innerText = `%K: ${stochK.toFixed(1)} ${isStochOverbought ? '🚫 (STRICT >85)' : (isStochOversold ? '🔵 (STRICT <15)' : '⚖️ NEUTRAL')}`;
-            stochFilterVal.style.color = isStochOverbought ? "#ef4444" : (isStochOversold ? "#3b82f6" : "#94a3b8");
+            stochFilterVal.innerText = `%K: ${stochK.toFixed(1)} (${stochK < 30 ? 'OVERSOLD 🟢' : (stochK > 70 ? 'OVERBOUGHT 🔴' : 'NEUTRAL ⚖️')})`;
+            stochFilterVal.style.color = stochK < 30 ? "#22c55e" : (stochK > 70 ? "#ef4444" : "#94a3b8");
 
             const recentVols = rawVolumeData.slice(-20);
             const avgVol = recentVols.reduce((acc, curr) => acc + curr.value, 0) / 20;
             const lastVol = rawVolumeData[rawVolumeData.length - 1].value;
-            const hasGoodVolume = lastVol > avgVol * 0.9; // حجم تداول أقوى للتأكيد
+            const hasGoodVolume = lastVol >= avgVol * 0.8;
+
+            volNewsVal.innerText = `VOL: ${lastVol.toFixed(0)} (${hasGoodVolume ? 'GOOD 🟢' : 'LOW ⚠️'})`;
+            volNewsVal.style.color = hasGoodVolume ? "#22c55e" : "#f59e0b";
 
             const recentSlice = candles.slice(-30);
-            const lastCandleBody = Math.abs(lastCandle.close - lastCandle.open);
-            const avgBody = recentSlice.reduce((acc, c) => acc + Math.abs(c.close - c.open), 0) / recentSlice.length;
-            const isHighNewsVolatility = lastCandleBody > (avgBody * 2.5);
-
-            if (isHighNewsVolatility) {
-                volNewsVal.innerText = `VOL: ${lastVol.toFixed(0)} (NEWS ⚡)`;
-                volNewsVal.style.color = "#ef4444";
-            } else {
-                volNewsVal.innerText = `VOL: ${lastVol.toFixed(0)} (${hasGoodVolume ? 'STRONG 🟢' : 'WEAK ⚠️'})`;
-                volNewsVal.style.color = hasGoodVolume ? "#22c55e" : "#f59e0b";
-            }
-
             const supportLevel = Math.min(...recentSlice.map(c => c.low));
             const resistanceLevel = Math.max(...recentSlice.map(c => c.high));
-            const nearSupport = Math.abs(lastClose - supportLevel) < 3.5;
-            const nearResistance = Math.abs(lastClose - resistanceLevel) < 3.5;
-            const isRetestingSupport = nearSupport && lastCandle.low <= supportLevel + 1.2;
-            const isRetestingResistance = nearResistance && lastCandle.high >= resistanceLevel - 1.2;
+            const nearSupport = Math.abs(lastClose - supportLevel) < 5.0;
+            const nearResistance = Math.abs(lastClose - resistanceLevel) < 5.0;
 
-            srRetestVal.innerText = isRetestingSupport ? "SUPPORT RETEST 🎯" : (isRetestingResistance ? "RESISTANCE RETEST 🎯" : "MID-RANGE ⚖️");
-            srRetestVal.style.color = (isRetestingSupport || isRetestingResistance) ? "#3b82f6" : "#94a3b8";
+            srRetestVal.innerText = nearSupport ? "NEAR SUPPORT 🟢" : (nearResistance ? "NEAR RESISTANCE 🔴" : "MID-RANGE ⚖️");
+            srRetestVal.style.color = nearSupport ? "#22c55e" : (nearResistance ? "#ef4444" : "#94a3b8");
 
-            // 🔒 شروط دقة صارمة جداً (أكثر من 95%) لمنع إعطاء إشارات عشوائية
-            let signalText = "⚪ WAITING FOR PERFECT SETUP";
+            // 🧮 حساب درجة التوافق ديناميكياً بناءً على المؤشرات الحقيقية
+            let buyScore = 0;
+            let sellScore = 0;
+
+            // حساب نقاط الشراء
+            if (rsiVal < 45) buyScore += 25;
+            if (stochK < 35) buyScore += 25;
+            if (isBullishTrend || lastClose >= lastEMA20) buyScore += 20;
+            if (nearSupport || absDist <= 6) buyScore += 15;
+            if (hasGoodVolume) buyScore += 15;
+
+            // حساب نقاط البيع
+            if (rsiVal > 55) sellScore += 25;
+            if (stochK > 65) sellScore += 25;
+            if (!isBullishTrend || lastClose <= lastEMA20) sellScore += 20;
+            if (nearResistance || absDist <= 6) sellScore += 15;
+            if (hasGoodVolume) sellScore += 15;
+
+            let signalText = "⚪ WAITING / NEUTRAL";
             let signalClass = "signal-wait";
-            let power = 40;
+            let power = 50;
             let sl = "---", tp1 = "---", tp2 = "---";
 
-            // شرط البيع عالي الدقة: تشبع شرعي قوي + إعادة اختبار مقاومة + غياب أخبار عنيفة
-            if (!isHighNewsVolatility && (isRsiOverbought && stochK > 80) && (nearResistance && isRetestingResistance)) {
-                signalText = "🔴 HIGH-PRECISION SELL";
-                signalClass = "signal-sell";
-                power = 97;
-                sl = (lastClose + 4.5).toFixed(2);
-                tp1 = (lastClose - 6.0).toFixed(2);
-                tp2 = (lastClose - 12.0).toFixed(2);
-            } 
-            // شرط الشراء عالي الدقة: تشبع بيعي قوي + اتجاه صاعد قوي + إعادة اختبار دعم + حجم تداول قوي
-            else if (!isHighNewsVolatility && (isRsiOversold && stochK < 20) && isBullishTrend && isRetestingSupport && hasGoodVolume) {
-                signalText = "🟢 HIGH-PRECISION BUY";
+            // شرط إعطاء إشارة الشراء (يتطلب درجة توافق عالية نسبياً لتجنب العشوائية)
+            if (buyScore >= 75 && buyScore > sellScore) {
+                signalText = "🟢 DYNAMIC BUY SIGNAL";
                 signalClass = "signal-buy";
-                power = 98;
+                power = buyScore;
                 sl = (lastClose - 4.5).toFixed(2);
                 tp1 = (lastClose + 6.0).toFixed(2);
                 tp2 = (lastClose + 12.0).toFixed(2);
             } 
+            // شرط إعطاء إشارة البيع
+            else if (sellScore >= 75 && sellScore > buyScore) {
+                signalText = "🔴 DYNAMIC SELL SIGNAL";
+                signalClass = "signal-sell";
+                power = sellScore;
+                sl = (lastClose + 4.5).toFixed(2);
+                tp1 = (lastClose - 6.0).toFixed(2);
+                tp2 = (lastClose - 12.0).toFixed(2);
+            } 
             else {
-                signalText = "⚪ NO SETUP (WAITING)";
+                signalText = "⚪ SCANNING MARKET...";
                 signalClass = "signal-wait";
-                power = 50;
+                power = Math.max(buyScore, sellScore);
             }
 
             signalTagElement.innerText = signalText;
@@ -481,7 +476,7 @@
                     }
                     lastPrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-                    statusElement.innerText = "● الفلاتر الصارمة وعالية الدقة تعمل بانتظار الفرصة المثالية";
+                    statusElement.innerText = "● محرك حساب التوافق الديناميكي للشراء والبيع نشط";
                 }
             } catch (err) {}
         }
