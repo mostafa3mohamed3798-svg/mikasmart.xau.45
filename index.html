@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold - Micro Scalping Engine</title>
+    <title>Mika Pro Gold - Stable Momentum Engine</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -40,7 +40,7 @@
             margin: 4px 0; 
             line-height: 1; 
         }
-        .status-badge { font-size: 0.8rem; color: #3b82f6; margin-top: 4px; }
+        .status-badge { font-size: 0.8rem; color: #eab308; margin-top: 4px; }
         
         .signal-container { 
             display: flex; 
@@ -59,7 +59,7 @@
             font-weight: bold; 
             font-size: 0.95rem; 
         }
-        .signal-good { background-color: rgba(234, 179, 8, 0.18); color: #eab308; border: 1px solid #eab308; }
+        .signal-wait { background-color: rgba(234, 179, 8, 0.18); color: #eab308; border: 1px solid #eab308; }
         .signal-strong { background-color: rgba(34, 197, 94, 0.18); color: #22c55e; border: 1px solid #22c55e; }
         .signal-strong-sell { background-color: rgba(239, 68, 68, 0.18); color: #ef4444; border: 1px solid #ef4444; }
 
@@ -90,6 +90,11 @@
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s ease;
+        }
+        .execute-btn.wait-active {
+            background: #334155;
+            color: #94a3b8;
+            cursor: not-allowed;
         }
         .execute-btn.strong-buy-active {
             background: linear-gradient(135deg, #10b981, #059669);
@@ -176,15 +181,15 @@
 <body>
 
     <div class="top-price-card">
-        <div class="header-title">⚡ Mika Micro Scalper - صفقات سريعة</div>
+        <div class="header-title">🛡️ Mika Stable Scalper - إشارات مستقرة</div>
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● وضع السيولة الفورية مفعل (بدون تعليق)...</div>
+        <div id="status" class="status-badge">● وضع تثبيت الإشارة ومنع التذبذب مفعل...</div>
         
         <div class="signal-container">
-            <span id="signalTag" class="signal-tag signal-strong">🚀 جاري رصد الفرصة...</span>
-            <span class="signal-power">قوة الشمعة: <strong id="signalPower" style="color: #fff;">0%</strong></span>
+            <span id="signalTag" class="signal-tag signal-wait">⏳ في انتظار استقرار الزخم...</span>
+            <span class="signal-power">حالة الاتجاه: <strong id="signalPower" style="color: #fff;">مستقر</strong></span>
         </div>
 
         <div class="targets-box">
@@ -194,25 +199,25 @@
         </div>
 
         <div class="trade-action-box">
-            <button id="executeBtn" class="execute-btn strong-buy-active" onclick="executeOrder()">
-                🚀 تنفيذ صفقة سريعة فورية
+            <button id="executeBtn" class="execute-btn wait-active" onclick="executeOrder()">
+                ⏳ بانتظار إشارة مؤكدة وثابتة
             </button>
         </div>
     </div>
 
     <div class="filters-dashboard">
         <div class="filter-card">
-            <div class="filter-label">📊 VWAP STATUS</div>
-            <div id="vwapFilterVal" class="filter-value" style="color: #22c55e;">--</div>
+            <div class="filter-label">📊 VWAP FILTER</div>
+            <div id="vwapFilterVal" class="filter-value" style="color: #3b82f6;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">⚡ MACD MOMENTUM</div>
-            <div id="macdFilterVal" class="filter-value" style="color: #22c55e;">--</div>
+            <div class="filter-label">⚡ STABLE MOMENTUM</div>
+            <div id="macdFilterVal" class="filter-value" style="color: #3b82f6;">--</div>
         </div>
         
         <div class="filter-card" style="grid-column: span 2;">
             <div class="filter-label" style="display: flex; justify-content: space-between;">
-                <span>🕯️ سيطرة الشمعة اللحظية (Micro Power)</span>
+                <span>🕯️ قوة الشمعة والاستقرار (Stable Power)</span>
                 <span id="candleTimer" style="color: #3b82f6;">--</span>
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: bold; margin: 6px 0 4px 0;">
@@ -263,13 +268,17 @@
         const candleTimer = document.getElementById('candleTimer');
         
         let lastLivePrice = 0;
-        let currentTimeframe = '1'; // يبدأ بـ 1 دقيقة للحصول على صفقات سريعة جداً
+        let currentTimeframe = '1';
         let showEMAs = true;
         let showVWAP = true;
         let currentTradeSetup = null;
 
         let globalCandles = [];
         let globalVolumes = [];
+        
+        // متغيرات التثبيت لمنع تقلب الإشارة العشوائي
+        let lockedSignalType = null; 
+        let lockedCandleTime = null;
 
         const chart = LightweightCharts.createChart(document.getElementById('chart'), {
             layout: { backgroundColor: '#020408', textColor: '#94a3b8' },
@@ -321,27 +330,6 @@
             return vwapData;
         }
 
-        function calculateMACD(candles) {
-            const ema12 = calculateEMA(candles, 12);
-            const ema26 = calculateEMA(candles, 26);
-            if (ema12.length === 0 || ema26.length === 0) return { macd: 1, signal: 0 };
-            
-            let macdLine = [];
-            for (let i = 0; i < candles.length; i++) {
-                const e12 = ema12.find(e => e.time === candles[i].time);
-                const e26 = ema26.find(e => e.time === candles[i].time);
-                if (e12 && e26) {
-                    macdLine.push({ time: candles[i].time, value: e12.value - e26.value });
-                }
-            }
-            if (macdLine.length < 9) return { macd: 1, signal: 0 };
-            const signalLineData = calculateEMA(macdLine.map(m => ({ time: m.time, close: m.value })), 9);
-            
-            const lastMacd = macdLine[macdLine.length - 1].value;
-            const lastSignal = signalLineData.length > 0 ? signalLineData[signalLineData.length - 1].value : 0;
-            return { macd: lastMacd, signal: lastSignal };
-        }
-
         function analyzeCurrentCandle(candles, activePrice) {
             if (candles.length === 0) return { bullPct: 50, bearPct: 50 };
             
@@ -370,9 +358,9 @@
             
             const remMin = Math.floor(remainingSeconds / 60);
             const remSec = remainingSeconds % 60;
-            candleTimer.innerText = `إغلاق: ${remMin}:${remSec < 10 ? '0' : ''}${remSec}`;
+            candleTimer.innerText = `إغلاق الشمعة: ${remMin}:${remSec < 10 ? '0' : ''}${remSec}`;
 
-            return { bullPct, bearPct };
+            return { bullPct, bearPct, candleTime: currentCandle.time };
         }
 
         function analyzeMarket(candles, rawVolumeData) {
@@ -384,64 +372,84 @@
             const ema200Data = calculateEMA(candles, 200);
             const vwapData = calculateVWAP(candles, rawVolumeData);
 
-            const candlePower = analyzeCurrentCandle(candles, activePrice);
-            const macdObj = calculateMACD(candles);
+            const candleInfo = analyzeCurrentCandle(candles, activePrice);
+            
+            // جلب قيمة الـ VWAP الحالية للفلترة الصارمة
+            const currentVwap = vwapData.length > 0 ? vwapData[vwapData.length - 1].value : activePrice;
 
-            // تعديل جذري: النظام سيحدد اتجاه الصفقة فوراً بناءً على أي ميل طفيف في الشمعة أو السعر الحالي (لا يتوقف أبداً)
-            let isBuy = candlePower.bullPct >= 48; // مرونة كاملة لإعطاء إشارة
+            // إذا تغيرت الشمعة، نقوم بفك التثبيت للسماح بتحليل شمعة جديدة بروية
+            if (lockedCandleTime !== candleInfo.candleTime) {
+                lockedSignalType = null;
+                lockedCandleTime = candleInfo.candleTime;
+            }
 
-            let signalText = "";
-            let signalClass = "";
-            let sl = "---", tp1 = "---", tp2 = "---";
+            // نظام التثبيت: إذا ثبتت إشارة خلال هذه الشمعة، لا يتم تغييرها لمنع التشتت
+            let signalType = lockedSignalType;
 
-            // أهداف سريعة تناسب ربح 3 إلى 4 دولارات (مسافات صغيرة وضيقة للسكالبينغ السريع)
-            const targetOffsetTP = 1.2; // مسافة الهدف السريع
-            const targetOffsetSL = 1.5; // مسافة وقف الخسارة
+            if (!signalType) {
+                // شروط صارمة تعتمد على الـ VWAP والزخم الواضح لتجنب الإشارات الوهمية
+                if (candleInfo.bullPct >= 58 && activePrice >= currentVwap) {
+                    signalType = 'BUY';
+                    lockedSignalType = 'BUY'; // تثبيت الإشارة طوال الشمعة
+                } else if (candleInfo.bearPct >= 58 && activePrice <= currentVwap) {
+                    signalType = 'SELL';
+                    lockedSignalType = 'SELL'; // تثبيت الإشارة طوال الشمعة
+                }
+            }
 
-            if (isBuy) {
-                signalText = `🟢 إشارة شراء سريعة (BUY - Scalp)`;
-                signalClass = "signal-strong";
+            const targetOffsetTP = 1.2; // هدف قريب لتحقيق 3-4 دولار بسرعة
+            const targetOffsetSL = 1.5; // وقف خسارة ضيق ومحمي
 
+            if (signalType === 'BUY') {
                 const slPrice = activePrice - targetOffsetSL;
                 const tp1Price = activePrice + targetOffsetTP;
                 const tp2Price = activePrice + (targetOffsetTP * 2);
 
-                sl = slPrice.toFixed(2);
-                tp1 = tp1Price.toFixed(2);
-                tp2 = tp2Price.toFixed(2);
-
-                currentTradeSetup = { type: 'BUY', entry: activePrice.toFixed(2), sl, tp1, tp2 };
+                currentTradeSetup = { type: 'BUY', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
                 
-                executeBtn.className = `execute-btn strong-buy-active`;
-                executeBtn.innerHTML = `🚀 تنفيذ شراء سريع (هدف 3-4$) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
-            } else {
-                signalText = `🔴 إشارة بيع سريعة (SELL - Scalp)`;
-                signalClass = "signal-strong-sell";
+                signalTagElement.innerHTML = `🟢 إشارة شراء مؤكدة وثابتة (BUY)`;
+                signalTagElement.className = `signal-tag signal-strong`;
+                signalPowerElement.innerHTML = `<span dir="ltr">مستقر (صعود)</span>`;
 
+                slValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.sl}</span>`;
+                tp1ValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.tp1}</span>`;
+                tp2ValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.tp2}</span>`;
+
+                executeBtn.className = `execute-btn strong-buy-active`;
+                executeBtn.innerHTML = `🚀 تنفيذ شراء مؤكد (هدف 3-4$) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
+            } else if (signalType === 'SELL') {
                 const slPrice = activePrice + targetOffsetSL;
                 const tp1Price = activePrice - targetOffsetTP;
                 const tp2Price = activePrice - (targetOffsetTP * 2);
 
-                sl = slPrice.toFixed(2);
-                tp1 = tp1Price.toFixed(2);
-                tp2 = tp2Price.toFixed(2);
-
-                currentTradeSetup = { type: 'SELL', entry: activePrice.toFixed(2), sl, tp1, tp2 };
+                currentTradeSetup = { type: 'SELL', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
                 
+                signalTagElement.innerHTML = `🔴 إشارة بيع مؤكدة وثابتة (SELL)`;
+                signalTagElement.className = `signal-tag signal-strong-sell`;
+                signalPowerElement.innerHTML = `<span dir="ltr">مستقر (هبوط)</span>`;
+
+                slValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.sl}</span>`;
+                tp1ValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.tp1}</span>`;
+                tp2ValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.tp2}</span>`;
+
                 executeBtn.className = `execute-btn strong-sell-active`;
-                executeBtn.innerHTML = `💥 تنفيذ بيع سريع (هدف 3-4$) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
+                executeBtn.innerHTML = `💥 تنفيذ بيع مؤكد (هدف 3-4$) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
+            } else {
+                currentTradeSetup = null;
+                signalTagElement.innerHTML = `⏳ بانتظار استقرار سيولة الشمعة...`;
+                signalTagElement.className = `signal-tag signal-wait`;
+                signalPowerElement.innerHTML = `<span dir="ltr">حيادي / ترقب</span>`;
+
+                slValElement.innerHTML = `---`;
+                tp1ValElement.innerHTML = `---`;
+                tp2ValElement.innerHTML = `---`;
+
+                executeBtn.className = `execute-btn wait-active`;
+                executeBtn.innerHTML = `⏳ بانتظار إشارة مؤكدة وثابتة`;
             }
 
-            signalTagElement.innerHTML = signalText;
-            signalTagElement.className = `signal-tag ${signalClass}`;
-            signalPowerElement.innerHTML = `<span dir="ltr">${Math.max(candlePower.bullPct, candlePower.bearPct).toFixed(0)}%</span>`;
-
-            slValElement.innerHTML = `<span dir="ltr">$${sl}</span>`;
-            tp1ValElement.innerHTML = `<span dir="ltr">$${tp1}</span>`;
-            tp2ValElement.innerHTML = `<span dir="ltr">$${tp2}</span>`;
-
-            vwapFilterVal.innerHTML = `<span dir="ltr">مفعل مباشر</span>`;
-            macdFilterVal.innerHTML = `<span dir="ltr">عزم نشط</span>`;
+            vwapFilterVal.innerHTML = `<span dir="ltr">${activePrice >= currentVwap ? 'فوق VWAP (آمن للشراء)' : 'تحت VWAP (آمن للبيع)'}</span>`;
+            macdFilterVal.innerHTML = `<span dir="ltr">فلتر الزخم مفعل</span>`;
 
             if (showEMAs) {
                 ema50Series.setData(ema50Data);
@@ -459,8 +467,11 @@
         }
 
         function executeOrder() {
-            if (!currentTradeSetup) return;
-            alert(`✅ تم تنفيذ الصفقة بنجاح!\nالنوع: ${currentTradeSetup.type}\nالدخول: $${currentTradeSetup.entry}\nالهدف الأول (TP1): $${currentTradeSetup.tp1}\nوقف الخسارة (SL): $${currentTradeSetup.sl}`);
+            if (!currentTradeSetup) {
+                alert('⚠️ يجدر الانتظار حتى تثبيت إشارة واضحة من السوق قبل التنفيذ.');
+                return;
+            }
+            alert(`✅ تم تنفيذ الصفقة بنجاح بنظام الثبات!\nالنوع: ${currentTradeSetup.type}\nالدخول: $${currentTradeSetup.entry}\nالهدف الأول (TP1): $${currentTradeSetup.tp1}\nوقف الخسارة (SL): $${currentTradeSetup.sl}`);
         }
 
         async function loadChartData() {
@@ -516,6 +527,7 @@
 
         function changeTimeframe(tf) {
             currentTimeframe = tf;
+            lockedSignalType = null; // إعادة ضبط عند تغيير الفريم
             document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
             loadChartData();
@@ -523,6 +535,7 @@
 
         function toggleEMA() {
             showEMAs = !showEMAs;
+            document.getElementById('emaTrendToggle')?.classList.toggle('active', showEMAs);
             document.getElementById('emaToggle').classList.toggle('active', showEMAs);
             loadChartData();
         }
@@ -535,8 +548,9 @@
 
         loadChartData();
         fetchBybitPrice();
-        setInterval(fetchBybitPrice, 1000); // تحديث السعر كل ثانية لتوليد إشارات لحظية
-        setInterval(loadChartData, 5000);  // تحديث الشموع كل 5 ثوانٍ
+        setInterval(fetchBybitPrice, 1000); 
+        setInterval(loadChartData, 5000);  
     </script>
 </body>
 </html>
+
