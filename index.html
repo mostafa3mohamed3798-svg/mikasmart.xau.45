@@ -68,6 +68,21 @@
 
         .signal-power { color: #94a3b8; font-size: 0.9rem; }
 
+        /* زر اختبار تيليجرام */
+        .btn-telegram-test {
+            background: #10b981;
+            color: #0b0f19;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+        .btn-telegram-test:hover { opacity: 0.9; transform: scale(1.02); }
+
         /* شريط معلومات الفلاتر والسيولة والأخبار */
         .filters-dashboard {
             display: grid;
@@ -147,7 +162,7 @@
         .btn-ema.active { background: rgba(255, 183, 3, 0.2); color: #ffb703; border-color: #ffb703; }
         .btn-vol.active { background: rgba(16, 185, 129, 0.2); color: #10b981; border-color: #10b981; }
 
-        /* غلاف الشموع الداخلي أسود عميق وجريء */
+        /* غلاف الشموع الداخلي أسود عميق */
         .chart-container { 
             width: 100%; 
             height: 500px; 
@@ -176,6 +191,10 @@
         <div class="signal-container">
             <span id="signalTag" class="signal-tag signal-wait">⚪ ANALYZING MARKET...</span>
             <span class="signal-power">قوة الإشارة: <strong id="signalPower" style="color: #fff;">0%</strong></span>
+        </div>
+
+        <div>
+            <button class="btn-telegram-test" onclick="testTelegramAlert()">🚀 تجربة إشعار تيليجرام</button>
         </div>
     </div>
 
@@ -218,6 +237,13 @@
     </div>
 
     <script>
+        // إعدادات البوت والـ Chat ID الخاصة بك
+        const TELEGRAM_BOT_TOKEN = '8942146381:AAFRkzmitQM6rnWOwhsy0DZRgoBoaILtNYo';
+        const TELEGRAM_CHAT_ID = '1009314819';
+
+        let lastSentSignal = "";
+        let lastSentTime = 0;
+
         const priceElement = document.getElementById('price');
         const statusElement = document.getElementById('status');
         const signalTagElement = document.getElementById('signalTag');
@@ -232,7 +258,77 @@
         let showEMAs = true;
         let showVolume = true;
 
-        // 1. تهيئة الشارت بخلفية سوداء داكنة جداً
+        // 1. إرسال التنبيهات الفورية لتيليجرام
+        async function sendTelegramAlert(signalType, price, timeframe) {
+            const message = `🚨 *تنبيه إشارة تداول جديدة!* 🚨\n\n` +
+                            `📊 *الزوج:* XAU/USDT (الذهب)\n` +
+                            `⏱️ *الفريم:* ${timeframe}m\n` +
+                            `🎯 *الإشارة:* ${signalType}\n` +
+                            `💰 *السعر الحالي:* $${price}\n\n` +
+                            `🤖 *المصدر:* Mika Smart AI Engine`;
+
+            const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+            try {
+                await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: TELEGRAM_CHAT_ID,
+                        text: message,
+                        parse_mode: 'Markdown'
+                    })
+                });
+                console.log("✅ تم إرسال الإشعار لتيليجرام بنجاح");
+            } catch (error) {
+                console.error("❌ فشل إرسال الإشعار لتيليجرام:", error);
+            }
+        }
+
+        // 2. زر اختبار الاتصال لتيليجرام
+        async function testTelegramAlert() {
+            const testMsg = "✅ *تم اتصال الداشبورد ببوت تيليجرام بنجاح!*\n\nجاهز لاستقبال إشارات الذهب الفورية (XAU/USDT) 🚀";
+            const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: testMsg, parse_mode: 'Markdown' })
+                });
+                const data = await res.json();
+                if(data.ok) {
+                    alert("تم إرسال رسالة الاختبار بنجاح إلى هاتفك! 📱✨");
+                } else {
+                    alert("حدث خطأ في الإرسال: " + data.description);
+                }
+            } catch(err) {
+                alert("فشل الاتصال: " + err.message);
+            }
+        }
+
+        // 3. الصوت المحلي للمتصفح
+        function playAlertSound(isBuy) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.frequency.value = isBuy ? 800 : 400;
+                osc.type = 'sine';
+                
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
+                
+                osc.start();
+                osc.stop(ctx.currentTime + 0.8);
+            } catch(e) {}
+        }
+
+        // 4. تهيئة الشارت
         const chartContainer = document.getElementById('chart');
         const chart = LightweightCharts.createChart(chartContainer, {
             layout: {
@@ -248,7 +344,6 @@
             timeScale: { borderColor: '#1e293b', timeVisible: true, secondsVisible: false },
         });
 
-        // الشموع اليابانية بارزة
         const candlestickSeries = chart.addCandlestickSeries({
             upColor: '#22c55e',
             downColor: '#ef4444',
@@ -259,26 +354,19 @@
             wickDownColor: '#ef4444',
         });
 
-        // 2. شارت حجم التداول (Volume Histogram)
         const volumeSeries = chart.addHistogramSeries({
             color: '#26a69a',
             priceFormat: { type: 'volume' },
-            priceScaleId: '', // منطقة منفصلة أسفل الشارت
-            scaleMargins: {
-                top: 0.8, // وضع الأحجام في الـ 20% السفلي من الشارت
-                bottom: 0,
-            },
+            priceScaleId: '',
+            scaleMargins: { top: 0.8, bottom: 0 },
         });
 
-        // خطوط EMA 50 & 200
         const ema50Series = chart.addLineSeries({ color: '#ffb703', lineWidth: 2, title: 'EMA 50', priceLineVisible: false });
         const ema200Series = chart.addLineSeries({ color: '#00b4d8', lineWidth: 2, title: 'EMA 200', priceLineVisible: false });
 
-        // خطوط الدعم والمقاومة (S&R Lines)
         const resLine = chart.addLineSeries({ color: '#ef4444', lineWidth: 1, lineStyle: 2, priceLineVisible: false, title: 'Res' });
         const supLine = chart.addLineSeries({ color: '#22c55e', lineWidth: 1, lineStyle: 2, priceLineVisible: false, title: 'Sup' });
 
-        // حساب EMA
         function calculateEMA(candles, period) {
             if (candles.length < period) return [];
             const k = 2 / (period + 1);
@@ -297,21 +385,19 @@
             return emaData;
         }
 
-        // 3. المحرك الخوارزمي الموحد لحساب الفلاتر الخمسة وإشارات التداول
+        // 5. خوارزمية حساب الإشارات والفلاتر
         function processInstitutionalFilters(candles, rawVolumeData) {
             if (candles.length < 200) return;
 
             const lastCandle = candles[candles.length - 1];
             const lastClose = lastCandle.close;
             
-            // حساب EMA 50 & 200
             const ema50Data = calculateEMA(candles, 50);
             const ema200Data = calculateEMA(candles, 200);
 
             const lastEMA50 = ema50Data[ema50Data.length - 1].value;
             const lastEMA200 = ema200Data[ema200Data.length - 1].value;
 
-            // 1. فلتر الاتجاه (Trend Filter)
             const isBullishTrend = lastClose > lastEMA50 && lastEMA50 > lastEMA200;
             const isBearishTrend = lastClose < lastEMA50 && lastEMA50 < lastEMA200;
 
@@ -326,7 +412,6 @@
                 trendFilterVal.style.color = "#94a3b8";
             }
 
-            // 2. فلتر السيولة والفوليوم (Liquidity & Volume Filter)
             const recentVolumes = rawVolumeData.slice(-20);
             const avgVol = recentVolumes.reduce((acc, curr) => acc + curr.value, 0) / 20;
             const lastVol = rawVolumeData[rawVolumeData.length - 1].value;
@@ -340,7 +425,6 @@
                 volFilterVal.style.color = "#94a3b8";
             }
 
-            // 3. فلتر الدعم والمقاومة (S&R Levels)
             const recentCandles = candles.slice(-50);
             const highestRes = Math.max(...recentCandles.map(c => c.high));
             const lowestSup = Math.min(...recentCandles.map(c => c.low));
@@ -348,13 +432,11 @@
             srFilterVal.innerText = `R:${highestRes.toFixed(1)} | S:${lowestSup.toFixed(1)}`;
             srFilterVal.style.color = "#00b4d8";
 
-            // رسم خطوط الدعم والمقاومة
             const resData = candles.map(c => ({ time: c.time, value: highestRes }));
             const supData = candles.map(c => ({ time: c.time, value: lowestSup }));
             resLine.setData(resData);
             supLine.setData(supData);
 
-            // 4. دمج كافة الفلاتر لحساب إشارة الشراء والبيع النهائية + القوة
             let signalText = "⚪ WAIT";
             let signalClass = "signal-wait";
             let power = 50;
@@ -385,7 +467,17 @@
             signalTagElement.className = `signal-tag ${signalClass}`;
             signalPowerElement.innerText = `${power}%`;
 
-            // تحديث الرسم البياني بالـ EMAs
+            // فحص وإرسال الإشعارات التلقائية
+            const now = Date.now();
+            if ((signalText.includes("STRONG BUY") || signalText.includes("STRONG SELL")) && 
+                (signalText !== lastSentSignal || (now - lastSentTime > 300000))) {
+                
+                lastSentSignal = signalText;
+                lastSentTime = now;
+                playAlertSound(signalText.includes("BUY"));
+                sendTelegramAlert(signalText, lastClose.toFixed(2), currentTimeframe);
+            }
+
             if (showEMAs) {
                 ema50Series.setData(ema50Data);
                 ema200Series.setData(ema200Data);
@@ -395,7 +487,6 @@
             }
         }
 
-        // جلب البيانات الكاملة من Bybit API
         async function loadChartData() {
             const klineUrl = `https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${currentTimeframe}&limit=300`;
             try {
@@ -421,73 +512,4 @@
 
                     candlestickSeries.setData(formattedCandles);
 
-                    if (showVolume) volumeSeries.setData(formattedVolume);
-                    else volumeSeries.setData([]);
-
-                    processInstitutionalFilters(formattedCandles, formattedVolume);
-
-                    chart.timeScale().setVisibleLogicalRange({
-                        from: formattedCandles.length - 40,
-                        to: formattedCandles.length - 1
-                    });
-                }
-            } catch (err) {
-                console.error("Chart Fetch Error:", err);
-            }
-        }
-
-        function changeTimeframe(tf) {
-            currentTimeframe = tf;
-            document.querySelectorAll('.tf-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            loadChartData();
-        }
-
-        function toggleEMA() {
-            showEMAs = !showEMAs;
-            document.getElementById('emaToggle').classList.toggle('active', showEMAs);
-            loadChartData();
-        }
-
-        function toggleVolume() {
-            showVolume = !showVolume;
-            document.getElementById('volToggle').classList.toggle('active', showVolume);
-            loadChartData();
-        }
-
-        async function fetchBybitPrice() {
-            const tickerUrl = 'https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSDT';
-
-            try {
-                const response = await fetch(tickerUrl);
-                const data = await response.json();
-                
-                if (data && data.retCode === 0 && data.result && data.result.list.length > 0) {
-                    const rawPrice = parseFloat(data.result.list[0].lastPrice);
-                    const formattedPrice = rawPrice.toFixed(2);
-                    
-                    if (lastPrice > 0) {
-                        if (rawPrice > lastPrice) priceElement.style.color = '#22c55e';
-                        else if (rawPrice < lastPrice) priceElement.style.color = '#ef4444';
-                    }
-                    lastPrice = rawPrice;
-
-                    priceElement.innerText = `$${formattedPrice}`;
-                    statusElement.innerText = "● الفلاتر والإشارات محسبة حياً بـ Bybit API";
-                    statusElement.style.color = "#10b981";
-                }
-            } catch (err) {
-                console.error("Price Fetch Error:", err);
-                statusElement.innerText = "⚠️ جاري إعادة الاتصال...";
-                statusElement.style.color = "#f59e0b";
-            }
-        }
-
-        loadChartData();
-        fetchBybitPrice();
-        setInterval(fetchBybitPrice, 1000);
-        setInterval(loadChartData, 10000);
-    </script>
-
-</body>
-</html>
+ 
