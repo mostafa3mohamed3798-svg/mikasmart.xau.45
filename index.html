@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Smart AI - Gold Dashboard</title>
+    <title>Mika Smart AI - Pro Native Dashboard</title>
+    <!-- مكتبة الرسم البياني المباشرة والمضمونة -->
+    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
@@ -21,7 +23,7 @@
             border-radius: 16px; 
             padding: 18px; 
             width: 100%; 
-            max-width: 500px; 
+            max-width: 550px; 
             text-align: center; 
             border: 1px solid #232d42; 
             box-shadow: 0 8px 20px rgba(0,0,0,0.4); 
@@ -54,14 +56,75 @@
         .signal-tag { background-color: rgba(34, 197, 94, 0.15); color: #22c55e; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 0.95rem; }
         .signal-power { color: #94a3b8; font-size: 0.9rem; }
 
-        .chart-container { 
+        /* حاوية الشارت الرئيسية */
+        .chart-card {
             background: #151c2c; 
             border-radius: 16px; 
-            overflow: hidden;
+            padding: 12px; 
             width: 100%; 
-            max-width: 500px; 
+            max-width: 550px; 
             border: 1px solid #232d42; 
-            height: 460px; 
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* شريط شريط الأدوات والفريمات */
+        .chart-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            background: #0e1420;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid #1e293b;
+        }
+
+        .tf-group {
+            display: flex;
+            gap: 4px;
+        }
+
+        .tf-btn, .indicator-btn {
+            background: #1e293b;
+            color: #94a3b8;
+            border: 1px solid #334155;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tf-btn:hover, .indicator-btn:hover {
+            color: #fff;
+            border-color: #10b981;
+        }
+
+        .tf-btn.active {
+            background: #10b981;
+            color: #0b0f19;
+            border-color: #10b981;
+        }
+
+        .indicator-btn.active {
+            background: #f59e0b;
+            color: #0b0f19;
+            border-color: #f59e0b;
+        }
+
+        .chart-container { 
+            width: 100%; 
+            height: 440px; 
+            position: relative;
+        }
+
+        #chart {
+            width: 100%;
+            height: 100%;
         }
     </style>
 </head>
@@ -69,7 +132,7 @@
 
     <div class="top-price-card">
         <div class="header-title">🤖 Mika Smart AI</div>
-        <div class="symbol-name">Bybit Futures - XAUUSDT</div>
+        <div class="symbol-name">Bybit Futures - XAUUSDT (شارت محلي مطور)</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
         <div id="status" class="status-badge">● جاري الاتصال بالبيانات...</div>
@@ -80,24 +143,25 @@
         </div>
     </div>
 
-    <!-- ويدجت الشارت المضمن المستقل -->
-    <div class="chart-container">
-        <div class="tradingview-widget-container" style="height:100%;width:100%;">
-          <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%;"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
-          {
-          "autosize": true,
-          "symbol": "BYBIT:XAUUSDT",
-          "interval": "15",
-          "timezone": "Etc/UTC",
-          "theme": "dark",
-          "style": "1",
-          "locale": "ar",
-          "allow_symbol_change": false,
-          "calendar": false,
-          "support_host": "https://www.tradingview.com"
-        }
-          </script>
+    <div class="chart-card">
+        <!-- شريط أدوات الفريمات والمؤشرات -->
+        <div class="chart-toolbar">
+            <div class="tf-group">
+                <button class="tf-btn" onclick="changeTimeframe('1')">1m</button>
+                <button class="tf-btn" onclick="changeTimeframe('5')">5m</button>
+                <button class="tf-btn active" onclick="changeTimeframe('15')">15m</button>
+                <button class="tf-btn" onclick="changeTimeframe('60')">1h</button>
+                <button class="tf-btn" onclick="changeTimeframe('240')">4h</button>
+                <button class="tf-btn" onclick="changeTimeframe('D')">1D</button>
+            </div>
+            <div>
+                <button id="emaToggle" class="indicator-btn active" onclick="toggleEMA()">EMA (20)</button>
+            </div>
+        </div>
+
+        <!-- حاوية رسم الشارت -->
+        <div class="chart-container">
+            <div id="chart"></div>
         </div>
     </div>
 
@@ -105,7 +169,110 @@
         const priceElement = document.getElementById('price');
         const statusElement = document.getElementById('status');
         let lastPrice = 0;
+        let currentTimeframe = '15';
+        let showEMA = true;
 
+        // 1. تهيئة الشارت المحلي الاحترافي
+        const chartContainer = document.getElementById('chart');
+        const chart = LightweightCharts.createChart(chartContainer, {
+            layout: {
+                backgroundColor: '#151c2c',
+                textColor: '#94a3b8',
+            },
+            grid: {
+                vertLines: { color: '#1e293b' },
+                horzLines: { color: '#1e293b' },
+            },
+            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+            priceScale: { borderColor: '#232d42' },
+            timeScale: { borderColor: '#232d42', timeVisible: true, secondsVisible: false },
+        });
+
+        // سلسلة الشموع اليابانية
+        const candlestickSeries = chart.addCandlestickSeries({
+            upColor: '#22c55e',
+            downColor: '#ef4444',
+            borderVisible: false,
+            wickUpColor: '#22c55e',
+            wickDownColor: '#ef4444',
+        });
+
+        // خط مؤشر EMA 20
+        const emaSeries = chart.addLineSeries({
+            color: '#f59e0b',
+            lineWidth: 2,
+            title: 'EMA 20'
+        });
+
+        // 2. دالة حساب المتوسط المتحرك الأسي (EMA)
+        function calculateEMA(candles, period = 20) {
+            const k = 2 / (period + 1);
+            let emaData = [];
+            let emaPrev = candles[0].close;
+
+            for (let i = 0; i < candles.length; i++) {
+                const close = candles[i].close;
+                if (i === 0) {
+                    emaPrev = close;
+                } else {
+                    emaPrev = (close * k) + (emaPrev * (1 - k));
+                }
+                if (i >= period - 1) {
+                    emaData.push({ time: candles[i].time, value: emaPrev });
+                }
+            }
+            return emaData;
+        }
+
+        // 3. دالة جلب الشموع وإعادة الرسم
+        async function loadChartData() {
+            const klineUrl = `https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${currentTimeframe}&limit=150`;
+            try {
+                const response = await fetch(klineUrl);
+                const data = await response.json();
+
+                if (data && data.retCode === 0 && data.result && data.result.list) {
+                    const formattedCandles = data.result.list.map(d => ({
+                        time: parseInt(d[0]) / 1000,
+                        open: parseFloat(d[1]),
+                        high: parseFloat(d[2]),
+                        low: parseFloat(d[3]),
+                        close: parseFloat(d[4])
+                    })).reverse();
+
+                    candlestickSeries.setData(formattedCandles);
+
+                    if (showEMA) {
+                        const emaData = calculateEMA(formattedCandles, 20);
+                        emaSeries.setData(emaData);
+                    } else {
+                        emaSeries.setData([]);
+                    }
+
+                    chart.timeScale().fitContent();
+                }
+            } catch (err) {
+                console.error("Chart Fetch Error:", err);
+            }
+        }
+
+        // 4. تغيير الفريم الزمني
+        function changeTimeframe(tf) {
+            currentTimeframe = tf;
+            document.querySelectorAll('.tf-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            loadChartData();
+        }
+
+        // 5. إظهار/إخفاء مؤشر EMA
+        function toggleEMA() {
+            showEMA = !showEMA;
+            const btn = document.getElementById('emaToggle');
+            btn.classList.toggle('active', showEMA);
+            loadChartData();
+        }
+
+        // 6. دالة تحديث السعر الحي لحظياً
         async function fetchBybitPrice() {
             const tickerUrl = 'https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSDT';
 
@@ -124,7 +291,7 @@
                     lastPrice = rawPrice;
 
                     priceElement.innerText = `$${formattedPrice}`;
-                    statusElement.innerText = "● اتصال مباشر بالسعر (Bybit API)";
+                    statusElement.innerText = "● اتصال حي ومباشر بدون حظر";
                     statusElement.style.color = "#10b981";
                 }
             } catch (err) {
@@ -134,8 +301,11 @@
             }
         }
 
+        // تشغيل الجلب والتحديث الدوري
+        loadChartData();
         fetchBybitPrice();
-        setInterval(fetchBybitPrice, 1000);
+        setInterval(fetchBybitPrice, 1000);  // تحديث الكارت كل ثانية
+        setInterval(loadChartData, 10000);   // تحديث الشموع والـ EMA كل 10 ثوانٍ
     </script>
 
 </body>
