@@ -12,10 +12,7 @@
         .logo-title { font-size: 1.4rem; font-weight: bold; color: #10b981; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
         .symbol { font-size: 1.1rem; color: #94a3b8; font-weight: bold; margin-bottom: 10px; }
         
-        /* Binance Live Price Display */
-        .price-container { margin: 15px 0; min-height: 50px; display: flex; justify-content: center; align-items: center; }
-        .live-price { font-size: 2.2rem; font-weight: bold; color: #f2a900; letter-spacing: 1px; }
-        .price-status { font-size: 0.8rem; color: #10b981; margin-top: -5px; margin-bottom: 10px; }
+        .price-container { margin: 10px 0; min-height: 50px; }
         
         .signal-box { display: inline-flex; align-items: center; gap: 8px; font-size: 1.3rem; font-weight: bold; color: #10b981; margin-bottom: 8px; }
         .strength { color: #10b981; font-size: 1.1rem; margin-bottom: 15px; }
@@ -30,13 +27,23 @@
 
     <div class="main-card">
         <div class="logo-title">🤖 Mika Smart AI</div>
-        <div class="symbol">XAU/USDT - Binance Direct</div>
+        <div class="symbol">XAU/USDT - Gold Perpetual</div>
         
-        <!-- Binance Direct WebSocket Live Price -->
+        <!-- Single Quote Widget -->
         <div class="price-container">
-            <div id="binance-price" class="live-price">جاري التحميل...</div>
+            <div class="tradingview-widget-container">
+              <div class="tradingview-widget-container__widget"></div>
+              <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js" async>
+              {
+              "symbol": "BYBIT:XAUUSDT.P",
+              "width": "100%",
+              "colorTheme": "dark",
+              "isTransparent": true,
+              "locale": "ar"
+            }
+              </script>
+            </div>
         </div>
-        <div class="price-status">● اتصال مباشر بسيرفر Binance</div>
         
         <div class="signal-box">
             <span style="color:#22c55e;">🟢</span> BUY
@@ -47,14 +54,14 @@
     </div>
 
     <div class="chart-card">
-        <!-- TradingView Chart Widget (OKX feed for stable rendering) -->
+        <!-- Chart Widget (15m Interval) -->
         <div class="tradingview-widget-container">
           <div id="tradingview_chart" style="height:100%;width:100%;"></div>
           <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
           <script type="text/javascript">
           new TradingView.widget({
             "autosize": true,
-            "symbol": "OKX:XAUUSDT",
+            "symbol": "BYBIT:XAUUSDT.P",
             "interval": "15",
             "timezone": "Etc/UTC",
             "theme": "dark",
@@ -69,33 +76,6 @@
           </script>
         </div>
     </div>
-
-    <!-- Script to Fetch Real-Time Price Directly from Binance -->
-    <script>
-        const priceElement = document.getElementById('binance-price');
-        
-        // الربط المباشر مع سيرفر بينانس للعقود/الأسعار
-        const ws = new WebSocket('wss://fstream.binance.com/ws/xauusdt@ticker');
-
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data && data.c) {
-                const price = parseFloat(data.c).toFixed(2);
-                priceElement.innerText = `$${price}`;
-            }
-        };
-
-        ws.onerror = (error) => {
-            // في حالة احتياج للبديل المباشر للـ Spot
-            const fallbackWs = new WebSocket('wss://stream.binance.com:9443/ws/paxgusdt@ticker');
-            fallbackWs.onmessage = (e) => {
-                const d = JSON.parse(e.data);
-                if (d && d.c) {
-                    priceElement.innerText = `$${parseFloat(d.c).toFixed(2)}`;
-                }
-            };
-        };
-    </script>
 
 </body>
 </html>
