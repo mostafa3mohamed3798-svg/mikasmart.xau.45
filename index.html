@@ -258,7 +258,7 @@
             <div id="chart"></div>
         </div>
     </div>
-    <script>
+  <script>
         const priceElement = document.getElementById('price');
         const statusElement = document.getElementById('status');
         const signalTagElement = document.getElementById('signalTag');
@@ -282,7 +282,7 @@
         let showVolume = true;
         let currentTradeSetup = null;
 
-        // تخزين مستويات الدعم والمقاومة الثابتة حتى لا تتغير مع كل نبضة سعرية
+        // متغيرات حفظ مستويات الدعم والمقاومة الثابتة
         let fixedSupport = null;
         let fixedResistance = null;
 
@@ -364,20 +364,17 @@
             return ((currentClose - lowestLow) / ((highestHigh - lowestLow) || 1)) * 100;
         }
 
-        // دالة تحديد قمم وقيعان ثابتة (Fixed Support & Resistance) لمنع الاهتزاز
+        // دالة تحديد المستويات الثابتة للدعم والمقاومة بدون تذبذب
         function calculateFixedSR(candles) {
             if (candles.length < 50) return;
-            // نأخذ نطاق أوسع وثابت (آخر 100 شمعة مثلاً) لتثبيت القمة والقاع الحقيقيين
             const historicalSlice = candles.slice(-100);
             const calculatedSupport = Math.min(...historicalSlice.map(c => c.low));
             const calculatedResistance = Math.max(...historicalSlice.map(c => c.high));
 
-            // إذا لم يتم تحديدها مسبقاً أو تم كسرها، نقوم بتثبيتها
             if (!fixedSupport || !fixedResistance) {
                 fixedSupport = calculatedSupport;
                 fixedResistance = calculatedResistance;
             } else {
-                // تحديث مرن فقط إذا تجاوز السعر الحدود الثابتة بوضوح
                 const currentP = candles[candles.length - 1].close;
                 if (currentP < fixedSupport) fixedSupport = currentP;
                 if (currentP > fixedResistance) fixedResistance = currentP;
@@ -389,7 +386,6 @@
 
             const activePrice = lastLivePrice > 0 ? lastLivePrice : candles[candles.length - 1].close;
 
-            // حساب المستويات الثابتة للدعم والمقاومة
             calculateFixedSR(candles);
 
             const ema20Data = calculateEMA(candles, 20);
@@ -422,10 +418,10 @@
             volNewsVal.innerHTML = `VOL: <span dir="ltr">${lastVol.toFixed(0)}</span> (${hasGoodVolume ? 'ACTIVE 🟢' : 'WEAK ⚠️'})`;
             volNewsVal.style.color = hasGoodVolume ? "#22c55e" : "#ef4444";
 
-            srRetestVal.innerHTML = `S: <span dir="ltr">$${fixedSupport.toFixed(1)}</span> | R: <span dir="ltr">$${fixedResistance.toFixed(1)}</span>`;
+            // عرض الدعم والمقاومة منسقاً ومنضبط الاتجاهات تماماً
+            srRetestVal.innerHTML = `<span dir="ltr">S: $${fixedSupport.toFixed(1)}</span> | <span dir="ltr">R: $${fixedResistance.toFixed(1)}</span>`;
             srRetestVal.style.color = "#3b82f6";
 
-            // نظام تجميع النقاط والترجيح الذكي (Scoring System)
             let bullishScore = 0;
             let bearishScore = 0;
 
@@ -618,7 +614,7 @@
             currentTimeframe = tf;
             document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
-            fixedSupport = null; // إعادة ضبط الدعم والمقاومة عند تغيير الإطار الزمني لتناسب الشارت الجديد
+            fixedSupport = null;
             fixedResistance = null;
             loadChartData();
         }
