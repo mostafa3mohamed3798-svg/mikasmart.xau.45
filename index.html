@@ -3,83 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Smart AI - Pro Native Dashboard</title>
+    <title>Mika Smart AI - Ultra Dark Dashboard</title>
     <!-- مكتبة الرسم البياني المباشرة والمضمونة -->
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
-            background-color: #0b0f19; 
-            color: #fff; 
-            font-family: system-ui, -apple-system, sans-serif; 
+            background-color: #03050a; 
+            color: #f1f5f9; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             padding: 12px; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
+            min-height: 100vh;
         }
         
+        /* كارت السعر العلوي الفاخر */
         .top-price-card { 
-            background: linear-gradient(145deg, #151c2c, #0e1420); 
-            border-radius: 16px; 
-            padding: 18px; 
+            background: linear-gradient(160deg, #0b0f19 0%, #060911 100%); 
+            border-radius: 20px; 
+            padding: 20px; 
             width: 100%; 
-            max-width: 550px; 
+            max-width: 580px; 
             text-align: center; 
-            border: 1px solid #232d42; 
-            box-shadow: 0 8px 20px rgba(0,0,0,0.4); 
-            margin-bottom: 12px; 
+            border: 1px solid #1e293b; 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), inset 0 1px 1px rgba(255, 255, 255, 0.05); 
+            margin-bottom: 14px; 
         }
         
-        .header-title { font-size: 1.2rem; font-weight: bold; color: #10b981; margin-bottom: 4px; }
-        .symbol-name { font-size: 0.85rem; color: #94a3b8; margin-bottom: 10px; }
+        .header-title { font-size: 1.25rem; font-weight: 800; color: #10b981; letter-spacing: 0.5px; margin-bottom: 2px; }
+        .symbol-name { font-size: 0.85rem; color: #64748b; font-weight: 500; margin-bottom: 12px; }
         
         .price-display { 
-            font-size: 2.5rem; 
-            font-weight: 800; 
+            font-size: 2.8rem; 
+            font-weight: 900; 
             color: #f59e0b; 
-            letter-spacing: 1px; 
-            margin: 6px 0; 
+            letter-spacing: 1.5px; 
+            margin: 4px 0; 
             line-height: 1; 
-            transition: color 0.3s ease;
+            text-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+            transition: color 0.25s ease, text-shadow 0.25s ease;
         }
-        .status-badge { font-size: 0.8rem; color: #10b981; margin-top: 4px; }
+        .status-badge { font-size: 0.8rem; color: #10b981; font-weight: 500; margin-top: 6px; }
         
         .signal-container { 
             display: flex; 
             justify-content: center; 
             align-items: center; 
-            gap: 15px; 
-            margin-top: 10px; 
-            padding-top: 10px; 
-            border-top: 1px solid #1e293b; 
+            gap: 16px; 
+            margin-top: 14px; 
+            padding-top: 12px; 
+            border-top: 1px solid rgba(255, 255, 255, 0.06); 
         }
-        .signal-tag { background-color: rgba(34, 197, 94, 0.15); color: #22c55e; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 0.95rem; }
-        .signal-power { color: #94a3b8; font-size: 0.9rem; }
+        .signal-tag { 
+            background: rgba(34, 197, 94, 0.12); 
+            color: #4ade80; 
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            padding: 4px 14px; 
+            border-radius: 20px; 
+            font-weight: 700; 
+            font-size: 0.9rem;
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.15);
+        }
+        .signal-power { color: #94a3b8; font-size: 0.88rem; }
 
-        /* حاوية الشارت الرئيسية */
+        /* حاوية الشارت الاحترافية */
         .chart-card {
-            background: #151c2c; 
-            border-radius: 16px; 
-            padding: 12px; 
+            background: #060911; 
+            border-radius: 20px; 
+            padding: 14px; 
             width: 100%; 
-            max-width: 550px; 
-            border: 1px solid #232d42; 
+            max-width: 580px; 
+            border: 1px solid #1e293b; 
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.03);
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
         }
 
-        /* شريط شريط الأدوات والفريمات */
+        /* شريط الأدوات والفريمات الزجاجي */
         .chart-toolbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
             gap: 8px;
-            background: #0e1420;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
             padding: 8px 12px;
-            border-radius: 10px;
-            border: 1px solid #1e293b;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .tf-group {
@@ -88,38 +102,42 @@
         }
 
         .tf-btn, .indicator-btn {
-            background: #1e293b;
-            color: #94a3b8;
-            border: 1px solid #334155;
-            padding: 5px 10px;
-            border-radius: 6px;
+            background: #0f172a;
+            color: #64748b;
+            border: 1px solid #1e293b;
+            padding: 6px 12px;
+            border-radius: 8px;
             font-size: 0.8rem;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .tf-btn:hover, .indicator-btn:hover {
-            color: #fff;
-            border-color: #10b981;
+            color: #f8fafc;
+            border-color: #334155;
         }
 
         .tf-btn.active {
             background: #10b981;
-            color: #0b0f19;
+            color: #022c22;
             border-color: #10b981;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
         }
 
         .indicator-btn.active {
-            background: #f59e0b;
-            color: #0b0f19;
-            border-color: #f59e0b;
+            background: rgba(255, 183, 3, 0.15);
+            color: #ffb703;
+            border-color: #ffb703;
+            box-shadow: 0 0 10px rgba(255, 183, 3, 0.2);
         }
 
         .chart-container { 
             width: 100%; 
-            height: 440px; 
+            height: 460px; 
             position: relative;
+            border-radius: 12px;
+            overflow: hidden;
         }
 
         #chart {
@@ -132,10 +150,10 @@
 
     <div class="top-price-card">
         <div class="header-title">🤖 Mika Smart AI</div>
-        <div class="symbol-name">Bybit Futures - XAUUSDT (شارت محلي مطور)</div>
+        <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● جاري الاتصال بالبيانات...</div>
+        <div id="status" class="status-badge">● جاري الاتصال بالسعر الحي...</div>
         
         <div class="signal-container">
             <span class="signal-tag">🟢 BUY</span>
@@ -144,7 +162,7 @@
     </div>
 
     <div class="chart-card">
-        <!-- شريط أدوات الفريمات والمؤشرات -->
+        <!-- شريط أدوات التحكم بالفريمات والمؤشر -->
         <div class="chart-toolbar">
             <div class="tf-group">
                 <button class="tf-btn" onclick="changeTimeframe('1')">1m</button>
@@ -159,7 +177,7 @@
             </div>
         </div>
 
-        <!-- حاوية رسم الشارت -->
+        <!-- منطقة الرسم الشاملة -->
         <div class="chart-container">
             <div id="chart"></div>
         </div>
@@ -172,39 +190,59 @@
         let currentTimeframe = '15';
         let showEMA = true;
 
-        // 1. تهيئة الشارت المحلي الاحترافي
+        // 1. تهيئة الشارت المحلي بخلفية أسود فاخرة وجماليات متكاملة
         const chartContainer = document.getElementById('chart');
         const chart = LightweightCharts.createChart(chartContainer, {
             layout: {
-                backgroundColor: '#151c2c',
-                textColor: '#94a3b8',
+                backgroundColor: '#060911',
+                textColor: '#64748b',
+                fontSize: 12,
+                fontFamily: 'Segoe UI, sans-serif',
             },
             grid: {
-                vertLines: { color: '#1e293b' },
-                horzLines: { color: '#1e293b' },
+                vertLines: { color: 'rgba(30, 41, 59, 0.4)', style: 1 },
+                horzLines: { color: 'rgba(30, 41, 59, 0.4)', style: 1 },
             },
-            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-            priceScale: { borderColor: '#232d42' },
-            timeScale: { borderColor: '#232d42', timeVisible: true, secondsVisible: false },
+            crosshair: {
+                mode: LightweightCharts.CrosshairMode.Normal,
+                vertLine: { color: '#334155', width: 1, style: 2, labelBackgroundColor: '#0f172a' },
+                horzLine: { color: '#334155', width: 1, style: 2, labelBackgroundColor: '#0f172a' },
+            },
+            priceScale: { 
+                borderColor: '#1e293b',
+                textColor: '#94a3b8',
+                alignLabels: true,
+            },
+            timeScale: { 
+                borderColor: '#1e293b',
+                timeVisible: true, 
+                secondsVisible: false,
+                textColor: '#94a3b8',
+            },
+            handleScroll: { vertTouchDrag: false },
         });
 
-        // سلسلة الشموع اليابانية
+        // الشموع اليابانية بتفاصيل واقعية وألوان نيون متناسقة
         const candlestickSeries = chart.addCandlestickSeries({
-            upColor: '#22c55e',
-            downColor: '#ef4444',
-            borderVisible: false,
-            wickUpColor: '#22c55e',
-            wickDownColor: '#ef4444',
+            upColor: '#00e676',           // أخضر نيون متوهج للشموع الصاعدة
+            downColor: '#ff1744',         // أحمر نيون قوي للشموع الهابطة
+            borderVisible: true,
+            borderUpColor: '#00e676',
+            borderDownColor: '#ff1744',
+            wickUpColor: '#00e676',       // الفتيل الصاعد
+            wickDownColor: '#ff1744',     // الفتيل الهابط
         });
 
-        // خط مؤشر EMA 20
+        // خط مؤشر EMA 20 الذهبي
         const emaSeries = chart.addLineSeries({
-            color: '#f59e0b',
+            color: '#ffb703',
             lineWidth: 2,
-            title: 'EMA 20'
+            title: 'EMA 20',
+            crosshairMarkerVisible: true,
+            priceLineVisible: false,
         });
 
-        // 2. دالة حساب المتوسط المتحرك الأسي (EMA)
+        // 2. خوارزمية حساب المتوسط المتحرك الأسي EMA
         function calculateEMA(candles, period = 20) {
             const k = 2 / (period + 1);
             let emaData = [];
@@ -224,7 +262,7 @@
             return emaData;
         }
 
-        // 3. دالة جلب الشموع وإعادة الرسم
+        // 3. جلب بيانات الشموع وتطبيق الرسم المحلي
         async function loadChartData() {
             const klineUrl = `https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${currentTimeframe}&limit=150`;
             try {
@@ -256,7 +294,7 @@
             }
         }
 
-        // 4. تغيير الفريم الزمني
+        // 4. تغيير الفريمات الزمانية
         function changeTimeframe(tf) {
             currentTimeframe = tf;
             document.querySelectorAll('.tf-btn').forEach(btn => btn.classList.remove('active'));
@@ -264,7 +302,7 @@
             loadChartData();
         }
 
-        // 5. إظهار/إخفاء مؤشر EMA
+        // 5. التبديل لمؤشر EMA
         function toggleEMA() {
             showEMA = !showEMA;
             const btn = document.getElementById('emaToggle');
@@ -272,7 +310,7 @@
             loadChartData();
         }
 
-        // 6. دالة تحديث السعر الحي لحظياً
+        // 6. جلب السعر اللحظي مع تأثير التوهج الصاعد والهابط
         async function fetchBybitPrice() {
             const tickerUrl = 'https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSDT';
 
@@ -285,13 +323,18 @@
                     const formattedPrice = rawPrice.toFixed(2);
                     
                     if (lastPrice > 0) {
-                        if (rawPrice > lastPrice) priceElement.style.color = '#22c55e';
-                        else if (rawPrice < lastPrice) priceElement.style.color = '#ef4444';
+                        if (rawPrice > lastPrice) {
+                            priceElement.style.color = '#00e676';
+                            priceElement.style.textShadow = '0 0 25px rgba(0, 230, 118, 0.4)';
+                        } else if (rawPrice < lastPrice) {
+                            priceElement.style.color = '#ff1744';
+                            priceElement.style.textShadow = '0 0 25px rgba(255, 23, 68, 0.4)';
+                        }
                     }
                     lastPrice = rawPrice;
 
                     priceElement.innerText = `$${formattedPrice}`;
-                    statusElement.innerText = "● اتصال حي ومباشر بدون حظر";
+                    statusElement.innerText = "● اتصال حي مباشر بـ Bybit API";
                     statusElement.style.color = "#10b981";
                 }
             } catch (err) {
@@ -301,11 +344,11 @@
             }
         }
 
-        // تشغيل الجلب والتحديث الدوري
+        // إطلاق الاستدعاءات الدورية
         loadChartData();
         fetchBybitPrice();
-        setInterval(fetchBybitPrice, 1000);  // تحديث الكارت كل ثانية
-        setInterval(loadChartData, 10000);   // تحديث الشموع والـ EMA كل 10 ثوانٍ
+        setInterval(fetchBybitPrice, 1000);
+        setInterval(loadChartData, 10000);
     </script>
 
 </body>
