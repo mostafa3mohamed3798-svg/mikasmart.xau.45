@@ -195,7 +195,7 @@
         <div id="status" class="status-badge">● محرك السكالبينغ المدمج (ATR + VWAP + MACD) مفعل...</div>
         
         <div class="signal-container">
-            <span id="signalTag" class="signal-tag signal-wait">🛡️ WAITING FOR 70%+ CONFIDENCE...</span>
+            <span id="signalTag" class="signal-tag signal-wait">🛡️ WAITING FOR 75%+ CONFIDENCE...</span>
             <span class="signal-power">تحليل السوق: <strong id="signalPower" style="color: #fff;">0%</strong></span>
         </div>
 
@@ -207,7 +207,7 @@
 
         <div class="trade-action-box">
             <button id="executeBtn" class="execute-btn" disabled onclick="executeOrder()">
-                🛡️ الثقة أقل من 70% - لا توجد صفقة حالياً
+                🛡️ سوق متذبذب / لا توجد صفقة آمنة
             </button>
         </div>
     </div>
@@ -258,8 +258,8 @@
         <div class="chart-container">
             <div id="chart"></div>
         </div>
-            </div>
-                <script>
+                </div>
+                    <script>
         const priceElement = document.getElementById('price');
         const statusElement = document.getElementById('status');
         const signalTagElement = document.getElementById('signalTag');
@@ -434,10 +434,9 @@
             const atrVal = calculateATR(candles, 14);
             const macdObj = calculateMACD(candles);
 
-            // 1. تعديل عرض VWAP مع تحذير Extended لو المسافة كبيرة عن 1.5%
             const vwapDiffPercent = Math.abs((activePrice - lastVWAP) / lastVWAP) * 100;
             let vwapStatusText = activePrice >= lastVWAP ? 'BULLISH 🟢' : 'BEARISH 🔴';
-            if (vwapDiffPercent > 1.5) {
+            if (vwapDiffPercent > 1.8) {
                 vwapStatusText += ' ⚠️ EXTENDED';
             }
             vwapFilterVal.innerHTML = `<span dir="ltr">$${lastVWAP.toFixed(1)}</span> (${vwapStatusText})`;
@@ -449,41 +448,50 @@
             atrFilterVal.innerHTML = `<span dir="ltr">ATR: $${atrVal.toFixed(2)}</span>`;
             atrFilterVal.style.color = "#3b82f6";
 
-            // 2. إصلاح وترتيب اتجاه عرض RSI / Stoch لتجنب مشكلة الـ RTL/LTR
             rsiStochVal.innerHTML = `<span dir="ltr">RSI: ${rsiVal.toFixed(0)} | Stoch: ${stochK.toFixed(0)}</span>`;
             rsiStochVal.style.color = "#94a3b8";
 
             srRetestVal.innerHTML = `<span dir="ltr">S: $${fixedSupport.toFixed(1)}</span> | <span dir="ltr">R: $${fixedResistance.toFixed(1)}</span>`;
             srRetestVal.style.color = "#3b82f6";
 
-            // 3. تحسين منطق النقاط لضمان عدم ثبات الثقة عند 50/50 عند توافق المؤشرات
+            // منطق حماية صارم ضد التذبذب وتناقض المؤشرات
+            let isVwapBullish = activePrice >= lastVWAP;
+            let isMacdBullish = macdObj.macd > macdObj.signal;
+            let isRsiHealthyForBuy = rsiVal >= 45 && rsiVal <= 68;
+            let isRsiHealthyForSell = rsiVal <= 55 && rsiVal >= 32;
+
             let bullishScore = 0;
             let bearishScore = 0;
 
-            if (activePrice > lastVWAP) bullishScore += 30;
-            else bearishScore += 30;
+            if (isVwapBullish && vwapDiffPercent <= 1.8) bullishScore += 35;
+            if (isMacdBullish) bullishScore += 35;
+            if (isRsiHealthyForBuy) bullishScore += 15;
+            if (stochK >= 40 && stochK <= 80) bullishScore += 15;
 
-            if (macdObj.macd > macdObj.signal) bullishScore += 30;
-            else bearishScore += 30;
+            if (!isVwapBullish && vwapDiffPercent <= 1.8) bearishScore += 35;
+            if (!isMacdBullish) bearishScore += 35;
+            if (isRsiHealthyForSell) bearishScore += 15;
+            if (stochK <= 60 && stochK >= 20) bearishScore += 15;
 
-            if (rsiVal >= 50 && rsiVal < 75) bullishScore += 20;
-            else if (rsiVal < 50 && rsiVal > 25) bearishScore += 20;
+            if (!isMacdBullish && isVwapBullish) {
+                bullishScore -= 20;
+            }
+            if (isMacdBullish && !isVwapBullish) {
+                bearishScore -= 20;
+            }
 
-            if (stochK >= 50 && stochK < 85) bullishScore += 20;
-            else if (stochK < 50 && stochK > 15) bearishScore += 20;
-
-            let totalScore = bullishScore + bearishScore;
-            let bullPercentage = totalScore > 0 ? Math.round((bullishScore / totalScore) * 100) : 50;
-            let bearPercentage = totalScore > 0 ? Math.round((bearishScore / totalScore) * 100) : 50;
+            let totalScore = Math.max(0, bullishScore) + Math.max(0, bearishScore);
+            let bullPercentage = totalScore > 0 ? Math.round((Math.max(0, bullishScore) / totalScore) * 100) : 50;
+            let bearPercentage = totalScore > 0 ? Math.round((Math.max(0, bearishScore) / totalScore) * 100) : 50;
 
             let signalText = "";
             let signalClass = "";
             let confidenceScore = 0;
             let sl = "---", tp1 = "---", tp2 = "---";
 
-            if (bullPercentage >= 70) {
+            if (bullPercentage >= 75 && isMacdBullish) {
                 confidenceScore = bullPercentage;
-                const isStrong = confidenceScore >= 80;
+                const isStrong = confidenceScore >= 85;
 
                 signalText = isStrong ? `🟢 [إشارة قوية] صعود بنسبة <span dir="ltr">${confidenceScore}%</span> (BUY)` : `🟡 [إشارة جيدة] صعود بنسبة <span dir="ltr">${confidenceScore}%</span> (BUY)`;
                 signalClass = isStrong ? "signal-strong" : "signal-good";
@@ -502,9 +510,9 @@
                 executeBtn.className = `execute-btn ${isStrong ? 'strong-buy-active' : 'good-active'}`;
                 executeBtn.innerHTML = isStrong ? `🚀 تنفيذ شراء (BUY) - ثقة <span dir="ltr">${confidenceScore}%</span>` : `⚠️ تنفيذ شراء (BUY) - ثقة <span dir="ltr">${confidenceScore}%</span>`;
 
-            } else if (bearPercentage >= 70) {
+            } else if (bearPercentage >= 75 && !isMacdBullish) {
                 confidenceScore = bearPercentage;
-                const isStrong = confidenceScore >= 80;
+                const isStrong = confidenceScore >= 85;
 
                 signalText = isStrong ? `🔴 [إشارة قوية] هبوط بنسبة <span dir="ltr">${confidenceScore}%</span> (SELL)` : `🟡 [إشارة جيدة] هبوط بنسبة <span dir="ltr">${confidenceScore}%</span> (SELL)`;
                 signalClass = isStrong ? "signal-strong-sell" : "signal-good";
@@ -527,9 +535,9 @@
                 currentTradeSetup = null;
                 executeBtn.disabled = true;
                 executeBtn.className = "execute-btn";
-                executeBtn.innerHTML = `🛡️ الثقة أقل من 70% (صعود: <span dir="ltr">${bullPercentage}%</span> | هبوط: <span dir="ltr">${bearPercentage}%</span>)`;
+                executeBtn.innerHTML = `🛡️ سوق متذبذب / لا توجد صفقة آمنة`;
                 
-                signalText = "🛡️ MARKET SIDEWAYS / WAITING 70%+...";
+                signalText = "🛡️ MARKET SIDEWAYS / WAITING FOR ALIGNMENT...";
                 signalClass = "signal-wait";
                 confidenceScore = Math.max(bullPercentage, bearPercentage);
             }
