@@ -3,85 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Smart AI - XAUUSD</title>
+    <title>Mika Smart AI - XAUUSD Realtime</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background-color: #0b0f19; color: #fff; font-family: system-ui, -apple-system, sans-serif; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        body { 
+            background-color: #0b0f19; 
+            color: #fff; 
+            font-family: system-ui, -apple-system, sans-serif; 
+            padding: 12px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            min-height: 100vh;
+        }
         
-        .main-card { background: #151c2c; border-radius: 16px; padding: 20px; width: 100%; max-width: 450px; text-align: center; border: 1px solid #232d42; box-shadow: 0 10px 25px rgba(0,0,0,0.5); margin-bottom: 15px; }
-        .logo-title { font-size: 1.4rem; font-weight: bold; color: #10b981; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
-        .symbol { font-size: 1.1rem; color: #94a3b8; font-weight: bold; margin-bottom: 10px; }
+        /* كارت السعر الرئيسي في الأعلى */
+        .top-price-card { 
+            background: linear-gradient(145deg, #151c2c, #0e1420); 
+            border-radius: 16px; 
+            padding: 20px; 
+            width: 100%; 
+            max-width: 500px; 
+            text-align: center; 
+            border: 1px solid #232d42; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4); 
+            margin-bottom: 12px; 
+        }
         
-        .price-container { margin: 15px 0; min-height: 45px; display: flex; justify-content: center; align-items: center; }
-        .live-price { font-size: 2.2rem; font-weight: bold; color: #f2a900; letter-spacing: 1px; }
-        .price-status { font-size: 0.8rem; color: #10b981; margin-bottom: 10px; }
+        .header-title { 
+            font-size: 1.2rem; 
+            font-weight: bold; 
+            color: #10b981; 
+            margin-bottom: 4px; 
+        }
         
-        .signal-box { display: inline-flex; align-items: center; gap: 8px; font-size: 1.3rem; font-weight: bold; color: #10b981; margin-bottom: 8px; }
-        .strength { color: #10b981; font-size: 1.1rem; margin-bottom: 15px; }
+        .symbol-name { 
+            font-size: 0.9rem; 
+            color: #94a3b8; 
+            margin-bottom: 12px; 
+        }
         
-        .chart-card { background: #151c2c; border-radius: 16px; padding: 10px; width: 100%; max-width: 450px; border: 1px solid #232d42; height: 420px; }
-        .tradingview-widget-container { height: 100%; width: 100%; }
+        .price-display { 
+            font-size: 2.5rem; 
+            font-weight: 800; 
+            color: #f59e0b; 
+            letter-spacing: 1px;
+            margin: 8px 0;
+            line-height: 1;
+        }
+        
+        .status-badge { 
+            font-size: 0.8rem; 
+            color: #10b981; 
+            margin-top: 6px;
+        }
+        
+        .signal-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid #1e293b;
+        }
+
+        .signal-tag {
+            background-color: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.95rem;
+        }
+
+        .signal-power {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        /* حاوية الرسم البياني */
+        .chart-container { 
+            background: #151c2c; 
+            border-radius: 16px; 
+            padding: 8px; 
+            width: 100%; 
+            max-width: 500px; 
+            border: 1px solid #232d42; 
+            height: 440px; 
+        }
     </style>
 </head>
 <body>
 
-    <div class="main-card">
-        <div class="logo-title">🤖 Mika Smart AI</div>
-        <div class="symbol">XAU/USDT - Binance Direct</div>
+    <!-- كارت السعر العلوي -->
+    <div class="top-price-card">
+        <div class="header-title">🤖 Mika Smart AI</div>
+        <div class="symbol-name">Binance Futures - XAU/USDT</div>
         
-        <div class="price-container">
-            <div id="binance-price" class="live-price">جاري التحميل...</div>
-        </div>
-        <div class="price-status">● سعر بينانس المباشر دون حظر</div>
+        <div id="price" class="price-display">...</div>
+        <div id="status" class="status-badge">● جاري اتصال السيرفر...</div>
         
-        <div class="signal-box">
-            <span style="color:#22c55e;">🟢</span> BUY
+        <div class="signal-container">
+            <span class="signal-tag">🟢 BUY</span>
+            <span class="signal-power">قوة الإشارة: <strong style="color: #fff;">91%</strong></span>
         </div>
-        <div class="strength">قوة الإشارة: 91%</div>
     </div>
 
-    <div class="chart-card">
-        <div class="tradingview-widget-container">
-          <div id="tradingview_chart" style="height:100%;width:100%;"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-          <script type="text/javascript">
-          new TradingView.widget({
-            "autosize": true,
-            "symbol": "TVC:GOLD",
-            "interval": "15",
-            "timezone": "Etc/UTC",
-            "theme": "dark",
-            "style": "1",
-            "locale": "ar",
-            "toolbar_bg": "#f1f3f6",
-            "enable_publishing": false,
-            "hide_top_toolbar": false,
-            "save_image": false,
-            "container_id": "tradingview_chart"
-          });
-          </script>
-        </div>
+    <!-- الرسم البياني -->
+    <div class="chart-container">
+        <div id="tradingview_chart" style="height:100%;width:100%;"></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+        <script type="text/javascript">
+            new TradingView.widget({
+                "autosize": true,
+                "symbol": "BINANCE:XAUUSDT",
+                "interval": "15",
+                "timezone": "Etc/UTC",
+                "theme": "dark",
+                "style": "1",
+                "locale": "ar",
+                "toolbar_bg": "#f1f3f6",
+                "enable_publishing": false,
+                "hide_top_toolbar": false,
+                "save_image": false,
+                "container_id": "tradingview_chart"
+            });
+        </script>
     </div>
 
     <script>
-        async function updatePrice() {
+        async function fetchBinancePrice() {
+            const priceElement = document.getElementById('price');
+            const statusElement = document.getElementById('status');
+
+            // استخدام بروكسي موثوق وجلب البيانات مباشرة من Binance Futures API
+            const proxy = "https://api.allorigins.win/get?url=";
+            const target = encodeURIComponent("https://fapi.binance.com/fapi/v1/ticker/price?symbol=XAUUSDT");
+
             try {
-                // قراءة ملف البيانات المحدث آلياً من GitHub Actions
-                const response = await fetch('./data.json?t=' + new Date().getTime());
-                const data = await response.json();
-                
-                if (data && data.price) {
-                    const formattedPrice = parseFloat(data.price).toFixed(2);
-                    document.getElementById('binance-price').innerText = `$${formattedPrice}`;
+                const res = await fetch(proxy + target);
+                const result = await res.json();
+                const parsedData = JSON.parse(result.contents);
+
+                if (parsedData && parsedData.price) {
+                    const priceValue = parseFloat(parsedData.price).toFixed(2);
+                    priceElement.innerText = `$${priceValue}`;
+                    statusElement.innerText = "● سعر مباشر من بينانس";
+                    statusElement.style.color = "#10b981";
                 }
-            } catch (error) {
-                console.error("خطأ في جلب السعر:", error);
+            } catch (err) {
+                console.error(err);
+                statusElement.innerText = "⚠️ جاري التحديث...";
+                statusElement.style.color = "#f59e0b";
             }
         }
 
-        // تشغيل الجلب فوراً وتحديثه كل 5 ثواني
-        updatePrice();
-        setInterval(updatePrice, 5000);
+        fetchBinancePrice();
+        setInterval(fetchBinancePrice, 3000);
     </script>
 
 </body>
