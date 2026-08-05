@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold - Tiered Scoring Engine</title>
+    <title>Mika Pro Gold - Fixed SR Engine</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -188,11 +188,11 @@
 <body>
 
     <div class="top-price-card">
-        <div class="header-title">🤖 Mika Pro Gold - Tiered Engine</div>
+        <div class="header-title">🤖 Mika Pro Gold - Fixed SR Engine</div>
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● محرك التدرج الذكي (70%-100%) مفعل...</div>
+        <div id="status" class="status-badge">● نظام الدعم الثابت والمستويات مفعل...</div>
         
         <div class="signal-container">
             <span id="signalTag" class="signal-tag signal-wait">🛡️ WAITING FOR 70%+ CONFIDENCE...</span>
@@ -230,7 +230,7 @@
             <div id="emaTrendVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">🛡️ S/R ZONES</div>
+            <div class="filter-label">🛡️ FIXED S/R ZONES</div>
             <div id="srRetestVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
@@ -281,6 +281,10 @@
         let showEMAs = true;
         let showVolume = true;
         let currentTradeSetup = null;
+
+        // تخزين مستويات الدعم والمقاومة الثابتة حتى لا تتغير مع كل نبضة سعرية
+        let fixedSupport = null;
+        let fixedResistance = null;
 
         const chart = LightweightCharts.createChart(document.getElementById('chart'), {
             layout: { backgroundColor: '#020408', textColor: '#94a3b8' },
@@ -360,10 +364,33 @@
             return ((currentClose - lowestLow) / ((highestHigh - lowestLow) || 1)) * 100;
         }
 
+        // دالة تحديد قمم وقيعان ثابتة (Fixed Support & Resistance) لمنع الاهتزاز
+        function calculateFixedSR(candles) {
+            if (candles.length < 50) return;
+            // نأخذ نطاق أوسع وثابت (آخر 100 شمعة مثلاً) لتثبيت القمة والقاع الحقيقيين
+            const historicalSlice = candles.slice(-100);
+            const calculatedSupport = Math.min(...historicalSlice.map(c => c.low));
+            const calculatedResistance = Math.max(...historicalSlice.map(c => c.high));
+
+            // إذا لم يتم تحديدها مسبقاً أو تم كسرها، نقوم بتثبيتها
+            if (!fixedSupport || !fixedResistance) {
+                fixedSupport = calculatedSupport;
+                fixedResistance = calculatedResistance;
+            } else {
+                // تحديث مرن فقط إذا تجاوز السعر الحدود الثابتة بوضوح
+                const currentP = candles[candles.length - 1].close;
+                if (currentP < fixedSupport) fixedSupport = currentP;
+                if (currentP > fixedResistance) fixedResistance = currentP;
+            }
+        }
+
         function analyzeMarket(candles, rawVolumeData) {
             if (candles.length < 200) return;
 
             const activePrice = lastLivePrice > 0 ? lastLivePrice : candles[candles.length - 1].close;
+
+            // حساب المستويات الثابتة للدعم والمقاومة
+            calculateFixedSR(candles);
 
             const ema20Data = calculateEMA(candles, 20);
             const ema50Data = calculateEMA(candles, 50);
@@ -375,16 +402,16 @@
             const distFromEMA50 = activePrice - lastEMA50;
             const pctDist = (distFromEMA50 / lastEMA50) * 100;
 
-            emaDistVal.innerText = `${distFromEMA50 > 0 ? '+' : ''}${distFromEMA50.toFixed(2)}$ (${pctDist.toFixed(2)}%)`;
+            emaDistVal.innerHTML = `<span dir="ltr">${distFromEMA50 > 0 ? '+' : ''}${distFromEMA50.toFixed(2)}$ (${pctDist.toFixed(2)}%)</span>`;
             emaDistVal.style.color = Math.abs(pctDist) <= 0.8 ? "#22c55e" : "#3b82f6";
 
             const rsiVal = calculateRSI(candles, 14);
             const stochK = calculateStochastic(candles, 14);
 
-            rsiFilterVal.innerText = `${rsiVal.toFixed(1)} (${rsiVal > 60 ? 'OVERBOUGHT 🔴' : (rsiVal < 40 ? 'OVERSOLD 🟢' : 'NEUTRAL ⚖️')})`;
+            rsiFilterVal.innerHTML = `<span dir="ltr">${rsiVal.toFixed(1)}</span> (${rsiVal > 60 ? 'OVERBOUGHT 🔴' : (rsiVal < 40 ? 'OVERSOLD 🟢' : 'NEUTRAL ⚖️')})`;
             rsiFilterVal.style.color = rsiVal > 60 ? "#ef4444" : (rsiVal < 40 ? "#22c55e" : "#94a3b8");
 
-            stochFilterVal.innerText = `%K: ${stochK.toFixed(1)} (${stochK > 70 ? 'OVERBOUGHT 🔴' : (stochK < 30 ? 'OVERSOLD 🟢' : 'NEUTRAL ⚖️')})`;
+            stochFilterVal.innerHTML = `%K: <span dir="ltr">${stochK.toFixed(1)}</span> (${stochK > 70 ? 'OVERBOUGHT 🔴' : (stochK < 30 ? 'OVERSOLD 🟢' : 'NEUTRAL ⚖️')})`;
             stochFilterVal.style.color = stochK > 70 ? "#ef4444" : (stochK < 30 ? "#22c55e" : "#94a3b8");
 
             const recentVols = rawVolumeData.slice(-20);
@@ -392,19 +419,10 @@
             const lastVol = rawVolumeData[rawVolumeData.length - 1].value;
             const hasGoodVolume = lastVol >= avgVol * 1.0;
 
-            volNewsVal.innerText = `VOL: ${lastVol.toFixed(0)} (${hasGoodVolume ? 'ACTIVE 🟢' : 'WEAK ⚠️'})`;
+            volNewsVal.innerHTML = `VOL: <span dir="ltr">${lastVol.toFixed(0)}</span> (${hasGoodVolume ? 'ACTIVE 🟢' : 'WEAK ⚠️'})`;
             volNewsVal.style.color = hasGoodVolume ? "#22c55e" : "#ef4444";
 
-            const recentSlice = candles.slice(-30);
-            let supportLevel = Math.min(...recentSlice.map(c => c.low));
-            let resistanceLevel = Math.max(...recentSlice.map(c => c.high));
-            
-            if (lastLivePrice > 0) {
-                if (lastLivePrice < supportLevel) supportLevel = lastLivePrice;
-                if (lastLivePrice > resistanceLevel) resistanceLevel = lastLivePrice;
-            }
-
-            srRetestVal.innerText = `S: $${supportLevel.toFixed(1)} | R: $${resistanceLevel.toFixed(1)}`;
+            srRetestVal.innerHTML = `S: <span dir="ltr">$${fixedSupport.toFixed(1)}</span> | R: <span dir="ltr">$${fixedResistance.toFixed(1)}</span>`;
             srRetestVal.style.color = "#3b82f6";
 
             // نظام تجميع النقاط والترجيح الذكي (Scoring System)
@@ -452,15 +470,13 @@
             let confidenceScore = 0;
             let sl = "---", tp1 = "---", tp2 = "---";
 
-            // المنطق الجديد للتدرج (جيدة من 70 لـ 79 | قوية من 80 لـ 100)
             if (bullPercentage >= 70) {
                 confidenceScore = bullPercentage;
                 const isStrong = confidenceScore >= 80;
 
-                signalText = isStrong ? `🟢 [إشارة قوية] صعود بنسبة ${confidenceScore}% (BUY)` : `🟡 [إشارة جيدة] صعود بنسبة ${confidenceScore}% (BUY)`;
+                signalText = isStrong ? `🟢 [إشارة قوية] صعود بنسبة <span dir="ltr">${confidenceScore}%</span> (BUY)` : `🟡 [إشارة جيدة] صعود بنسبة <span dir="ltr">${confidenceScore}%</span> (BUY)`;
                 signalClass = isStrong ? "signal-strong" : "signal-good";
 
-                // أهداف أوسع في حالة الإشارة القوية
                 const multiplier = isStrong ? 1.2 : 1.0;
                 const slPrice = activePrice - (5.5 * multiplier);
                 const tp1Price = activePrice + (8.0 * multiplier);
@@ -474,13 +490,13 @@
                 
                 executeBtn.disabled = false;
                 executeBtn.className = `execute-btn ${isStrong ? 'strong-buy-active' : 'good-active'}`;
-                executeBtn.innerText = isStrong ? `🚀 تنفيذ صفقة شراء قوية (BUY) - ثقة ${confidenceScore}%` : `⚠️ تنفيذ صفقة شراء جيدة (BUY) - ثقة ${confidenceScore}%`;
+                executeBtn.innerHTML = isStrong ? `🚀 تنفيذ صفقة شراء قوية (BUY) - ثقة <span dir="ltr">${confidenceScore}%</span>` : `⚠️ تنفيذ صفقة شراء جيدة (BUY) - ثقة <span dir="ltr">${confidenceScore}%</span>`;
 
             } else if (bearPercentage >= 70) {
                 confidenceScore = bearPercentage;
                 const isStrong = confidenceScore >= 80;
 
-                signalText = isStrong ? `🔴 [إشارة قوية] هبوط بنسبة ${confidenceScore}% (SELL)` : `🟡 [إشارة جيدة] هبوط بنسبة ${confidenceScore}% (SELL)`;
+                signalText = isStrong ? `🔴 [إشارة قوية] هبوط بنسبة <span dir="ltr">${confidenceScore}%</span> (SELL)` : `🟡 [إشارة جيدة] هبوط بنسبة <span dir="ltr">${confidenceScore}%</span> (SELL)`;
                 signalClass = isStrong ? "signal-strong-sell" : "signal-good";
 
                 const multiplier = isStrong ? 1.2 : 1.0;
@@ -496,29 +512,28 @@
                 
                 executeBtn.disabled = false;
                 executeBtn.className = `execute-btn ${isStrong ? 'strong-sell-active' : 'good-active'}`;
-                executeBtn.innerText = isStrong ? `💥 تنفيذ صفقة بيع قوية (SELL) - ثقة ${confidenceScore}%` : `⚠️ تنفيذ صفقة بيع جيدة (SELL) - ثقة ${confidenceScore}%`;
+                executeBtn.innerHTML = isStrong ? `💥 تنفيذ صفقة بيع قوية (SELL) - ثقة <span dir="ltr">${confidenceScore}%</span>` : `⚠️ تنفيذ صفقة بيع جيدة (SELL) - ثقة <span dir="ltr">${confidenceScore}%</span>`;
 
             } else {
-                // أقل من 70% (تذبذب)
                 currentTradeSetup = null;
                 executeBtn.disabled = true;
                 executeBtn.className = "execute-btn";
-                executeBtn.innerText = `🛡️ الثقة أقل من 70% (صعود: ${bullPercentage}% | هبوط: ${bearPercentage}%)`;
+                executeBtn.innerHTML = `🛡️ الثقة أقل من 70% (صعود: <span dir="ltr">${bullPercentage}%</span> | هبوط: <span dir="ltr">${bearPercentage}%</span>)`;
                 
                 signalText = "🛡️ MARKET SIDEWAYS / WAITING 70%+...";
                 signalClass = "signal-wait";
                 confidenceScore = Math.max(bullPercentage, bearPercentage);
             }
 
-            signalTagElement.innerText = signalText;
+            signalTagElement.innerHTML = signalText;
             signalTagElement.className = `signal-tag ${signalClass}`;
-            signalPowerElement.innerText = `${confidenceScore}% (صعود: ${bullPercentage}% - هبوط: ${bearPercentage}%)`;
+            signalPowerElement.innerHTML = `<span dir="ltr">${confidenceScore}%</span> (صعود: <span dir="ltr">${bullPercentage}%</span> - هبوط: <span dir="ltr">${bearPercentage}%</span>)`;
 
-            slValElement.innerText = sl !== "---" ? `$${sl}` : "---";
-            tp1ValElement.innerText = tp1 !== "---" ? `$${tp1}` : "---";
-            tp2ValElement.innerText = tp2 !== "---" ? `$${tp2}` : "---";
+            slValElement.innerHTML = sl !== "---" ? `<span dir="ltr">$${sl}</span>` : "---";
+            tp1ValElement.innerHTML = tp1 !== "---" ? `<span dir="ltr">$${tp1}</span>` : "---";
+            tp2ValElement.innerHTML = tp2 !== "---" ? `<span dir="ltr">$${tp2}</span>` : "---";
 
-            emaTrendVal.innerText = `صعود: ${bullPercentage}% | هبوط: ${bearPercentage}%`;
+            emaTrendVal.innerHTML = `صعود: <span dir="ltr">${bullPercentage}%</span> | هبوط: <span dir="ltr">${bearPercentage}%</span>`;
             emaTrendVal.style.color = bullPercentage > bearPercentage ? "#22c55e" : "#ef4444";
 
             if (showEMAs) {
@@ -594,7 +609,7 @@
                     }
                     lastLivePrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-                    statusElement.innerText = "● محرك التدرج الذكي (70%-100%) مفعل";
+                    statusElement.innerText = "● نظام الدعم الثابت والمستويات مفعل";
                 }
             } catch (err) {}
         }
@@ -603,6 +618,8 @@
             currentTimeframe = tf;
             document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
+            fixedSupport = null; // إعادة ضبط الدعم والمقاومة عند تغيير الإطار الزمني لتناسب الشارت الجديد
+            fixedResistance = null;
             loadChartData();
         }
 
