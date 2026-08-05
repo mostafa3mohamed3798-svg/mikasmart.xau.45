@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Smart AI - Institutional Trading Engine</title>
-    <!-- مكتبة الرسم البياني المباشرة والمضمونة -->
+    <title>Mika Smart AI - Multi-Indicator Institutional Engine</title>
+    <!-- مكتبة الرسم البياني المباشرة -->
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -18,13 +18,47 @@
             align-items: center; 
         }
         
+        /* كارت إعدادات تيليجرام الآمنة (يتم حفظها محلياً في متصفحك فقط) */
+        .settings-card {
+            background: linear-gradient(145deg, #1e1b4b, #0f172a);
+            border-radius: 16px;
+            padding: 14px;
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            border: 1px solid #312e81;
+            margin-bottom: 12px;
+        }
+        .settings-card input {
+            background: #0b0f19;
+            border: 1px solid #4338ca;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            width: 45%;
+            margin: 4px;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+        .settings-card button {
+            background: #6366f1;
+            color: #fff;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 6px;
+            font-size: 0.8rem;
+        }
+
         /* كارت السعر والتحليل الرئيسي */
         .top-price-card { 
             background: linear-gradient(145deg, #151c2c, #0e1420); 
             border-radius: 16px; 
             padding: 18px; 
             width: 100%; 
-            max-width: 580px; 
+            max-width: 600px; 
             text-align: center; 
             border: 1px solid #232d42; 
             box-shadow: 0 8px 20px rgba(0,0,0,0.5); 
@@ -68,7 +102,6 @@
 
         .signal-power { color: #94a3b8; font-size: 0.9rem; }
 
-        /* زر اختبار تيليجرام */
         .btn-telegram-test {
             background: #10b981;
             color: #0b0f19;
@@ -83,13 +116,13 @@
         }
         .btn-telegram-test:hover { opacity: 0.9; transform: scale(1.02); }
 
-        /* شريط معلومات الفلاتر والسيولة والأخبار */
+        /* شبكة الفلاتر والمؤشرات المؤسسية */
         .filters-dashboard {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 8px;
             width: 100%;
-            max-width: 580px;
+            max-width: 600px;
             margin-bottom: 12px;
         }
 
@@ -104,13 +137,13 @@
         .filter-label { font-size: 0.72rem; color: #64748b; font-weight: 600; margin-bottom: 4px; }
         .filter-value { font-size: 0.85rem; font-weight: bold; color: #f8fafc; }
 
-        /* حاوية الشارت الخارجية */
+        /* حاوية الشارت */
         .chart-card {
             background: #151c2c; 
             border-radius: 16px; 
             padding: 12px; 
             width: 100%; 
-            max-width: 580px; 
+            max-width: 600px; 
             border: 1px solid #232d42; 
             box-shadow: 0 8px 20px rgba(0,0,0,0.4);
             display: flex;
@@ -118,7 +151,6 @@
             gap: 10px;
         }
 
-        /* شريط التحكم بالفريمات والمؤشرات */
         .chart-toolbar {
             display: flex;
             justify-content: space-between;
@@ -131,10 +163,7 @@
             border: 1px solid #1e293b;
         }
 
-        .tf-group, .indicator-group {
-            display: flex;
-            gap: 4px;
-        }
+        .tf-group, .indicator-group { display: flex; gap: 4px; }
 
         .tf-btn, .indicator-btn {
             background: #1e293b;
@@ -148,21 +177,10 @@
             transition: all 0.2s ease;
         }
 
-        .tf-btn:hover, .indicator-btn:hover {
-            color: #fff;
-            border-color: #10b981;
-        }
-
-        .tf-btn.active {
-            background: #10b981;
-            color: #0b0f19;
-            border-color: #10b981;
-        }
-
+        .tf-btn.active { background: #10b981; color: #0b0f19; border-color: #10b981; }
         .btn-ema.active { background: rgba(255, 183, 3, 0.2); color: #ffb703; border-color: #ffb703; }
         .btn-vol.active { background: rgba(16, 185, 129, 0.2); color: #10b981; border-color: #10b981; }
 
-        /* غلاف الشموع الداخلي أسود عميق */
         .chart-container { 
             width: 100%; 
             height: 500px; 
@@ -172,17 +190,24 @@
             border: 1px solid #000;
         }
 
-        #chart {
-            width: 100%;
-            height: 100%;
-        }
+        #chart { width: 100%; height: 100%; }
     </style>
 </head>
 <body>
 
-    <!-- الكارت الرئيسي بالإشارة الحية -->
+    <!-- كارت إدخال التوكن الآمن (يُحفظ في متصفحك فقط ولا يظهر على GitHub) -->
+    <div class="settings-card">
+        <div style="font-size: 0.85rem; font-weight: bold; color: #a5b4fc; margin-bottom: 6px;">🔒 إعدادات تيليجرام الآمنة (مخزنة بجهازك فقط)</div>
+        <input type="text" id="botTokenInput" placeholder="أدخل Bot Token هنا">
+        <input type="text" id="chatIdInput" placeholder="أدخل Chat ID هنا">
+        <div>
+            <button onclick="saveTelegramSettings()">💾 حفظ البيانات بأمان</button>
+        </div>
+    </div>
+
+    <!-- الكارت الرئيسي -->
     <div class="top-price-card">
-        <div class="header-title">🤖 Mika Smart AI Engine</div>
+        <div class="header-title">🤖 Mika Multi-Indicator Engine</div>
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
@@ -198,23 +223,27 @@
         </div>
     </div>
 
-    <!-- شبكة فلاتر التداول الذكية -->
+    <!-- شبكة المؤشرات المؤسسية الأربعة -->
     <div class="filters-dashboard">
         <div class="filter-card">
-            <div class="filter-label">📈 TREND FILTER</div>
+            <div class="filter-label">📈 TREND (EMA 50/200)</div>
             <div id="trendFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">💧 LIQUIDITY / VOL</div>
-            <div id="volFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
+            <div class="filter-label">⚡ STOCHASTIC (14,3,3)</div>
+            <div id="stochFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">🎯 S&R LEVELS</div>
-            <div id="srFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
+            <div class="filter-label">📊 RSI (14)</div>
+            <div id="rsiFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
+        </div>
+        <div class="filter-card">
+            <div class="filter-label">💧 VOLUME / LIQUIDITY</div>
+            <div id="volFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
     </div>
 
-    <!-- الشارت الاحترافي -->
+    <!-- الشارت -->
     <div class="chart-card">
         <div class="chart-toolbar">
             <div class="tf-group">
@@ -223,7 +252,6 @@
                 <button class="tf-btn active" onclick="changeTimeframe('15')">15m</button>
                 <button class="tf-btn" onclick="changeTimeframe('60')">1h</button>
                 <button class="tf-btn" onclick="changeTimeframe('240')">4h</button>
-                <button class="tf-btn" onclick="changeTimeframe('D')">1D</button>
             </div>
             <div class="indicator-group">
                 <button id="emaToggle" class="indicator-btn btn-ema active" onclick="toggleEMA()">EMAs</button>
@@ -237,9 +265,21 @@
     </div>
 
     <script>
-        // إعدادات البوت والـ Chat ID الخاصة بك
-        const TELEGRAM_BOT_TOKEN = '8942146381:AAFRkzmitQM6rnWOwhsy0DZRgoBoaILtNYo';
-        const TELEGRAM_CHAT_ID = '1009314819';
+        // استرجاع التوكن والـ Chat ID المخزنين محلياً في متصفحك
+        document.getElementById('botTokenInput').value = localStorage.getItem('mika_bot_token') || '';
+        document.getElementById('chatIdInput').value = localStorage.getItem('mika_chat_id') || '';
+
+        function saveTelegramSettings() {
+            const token = document.getElementById('botTokenInput').value.trim();
+            const chatId = document.getElementById('chatIdInput').value.trim();
+            if(!token || !chatId) {
+                alert("الرجاء إدخال التوكن و Chat ID بشكل صحيح!");
+                return;
+            }
+            localStorage.setItem('mika_bot_token', token);
+            localStorage.setItem('mika_chat_id', chatId);
+            alert("تم حفظ بيانات التيليجرام في متصفحك بأمان تام! ✅");
+        }
 
         let lastSentSignal = "";
         let lastSentTime = 0;
@@ -250,79 +290,81 @@
         const signalPowerElement = document.getElementById('signalPower');
 
         const trendFilterVal = document.getElementById('trendFilterVal');
+        const stochFilterVal = document.getElementById('stochFilterVal');
+        const rsiFilterVal = document.getElementById('rsiFilterVal');
         const volFilterVal = document.getElementById('volFilterVal');
-        const srFilterVal = document.getElementById('srFilterVal');
         
         let lastPrice = 0;
         let currentTimeframe = '15';
         let showEMAs = true;
         let showVolume = true;
 
-        // 1. إرسال التنبيهات الفورية لتيليجرام
-        async function sendTelegramAlert(signalType, price, timeframe) {
+        // 1. إرسال التنبيه الفوري لتيليجرام باستخدام التوكن المخزن محلياً
+        async function sendTelegramAlert(signalType, price, timeframe, details) {
+            const botToken = localStorage.getItem('mika_bot_token');
+            const chatId = localStorage.getItem('mika_chat_id');
+            if(!botToken || !chatId) return;
+
             const message = `🚨 *تنبيه إشارة تداول جديدة!* 🚨\n\n` +
                             `📊 *الزوج:* XAU/USDT (الذهب)\n` +
                             `⏱️ *الفريم:* ${timeframe}m\n` +
                             `🎯 *الإشارة:* ${signalType}\n` +
-                            `💰 *السعر الحالي:* $${price}\n\n` +
+                            `💰 *السعر الحالي:* $${price}\n` +
+                            `📝 *تفاصيل المؤشرات:* ${details}\n\n` +
                             `🤖 *المصدر:* Mika Smart AI Engine`;
 
-            const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+            const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
             try {
                 await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: TELEGRAM_CHAT_ID,
-                        text: message,
-                        parse_mode: 'Markdown'
-                    })
+                    body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'Markdown' })
                 });
-                console.log("✅ تم إرسال الإشعار لتيليجرام بنجاح");
             } catch (error) {
-                console.error("❌ فشل إرسال الإشعار لتيليجرام:", error);
+                console.error("Telegram error:", error);
             }
         }
 
         // 2. زر اختبار الاتصال لتيليجرام
         async function testTelegramAlert() {
-            const testMsg = "✅ *تم اتصال الداشبورد ببوت تيليجرام بنجاح!*\n\nجاهز لاستقبال إشارات الذهب الفورية (XAU/USDT) 🚀";
-            const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+            const botToken = localStorage.getItem('mika_bot_token');
+            const chatId = localStorage.getItem('mika_chat_id');
+            
+            if(!botToken || !chatId) {
+                alert("يرجى إدخال وحفظ Bot Token و Chat ID في الحقول بالأعلى أولاً!");
+                return;
+            }
+
+            const testMsg = "✅ *تم اتصال الداشبورد وبقية المؤشرات بـ تيليجرام بنجاح!* 🚀";
+            const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
             try {
                 const res = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: testMsg, parse_mode: 'Markdown' })
+                    body: JSON.stringify({ chat_id: chatId, text: testMsg, parse_mode: 'Markdown' })
                 });
                 const data = await res.json();
-                if(data.ok) {
-                    alert("تم إرسال رسالة الاختبار بنجاح إلى هاتفك! 📱✨");
-                } else {
-                    alert("حدث خطأ في الإرسال: " + data.description);
-                }
+                if(data.ok) alert("تم إرسال رسالة الاختبار بنجاح إلى هاتفك! 📱✨");
+                else alert("خطأ من تيليجرام: " + data.description);
             } catch(err) {
                 alert("فشل الاتصال: " + err.message);
             }
         }
 
-        // 3. الصوت المحلي للمتصفح
+        // 3. الصوت المحلي
         function playAlertSound(isBuy) {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
-                
                 osc.connect(gain);
                 gain.connect(ctx.destination);
-                
                 osc.frequency.value = isBuy ? 800 : 400;
                 osc.type = 'sine';
-                
                 gain.gain.setValueAtTime(0.3, ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.8);
-                
                 osc.start();
                 osc.stop(ctx.currentTime + 0.8);
             } catch(e) {}
@@ -331,70 +373,82 @@
         // 4. تهيئة الشارت
         const chartContainer = document.getElementById('chart');
         const chart = LightweightCharts.createChart(chartContainer, {
-            layout: {
-                backgroundColor: '#020408',
-                textColor: '#94a3b8',
-            },
-            grid: {
-                vertLines: { color: 'rgba(30, 41, 59, 0.25)' },
-                horzLines: { color: 'rgba(30, 41, 59, 0.25)' },
-            },
+            layout: { backgroundColor: '#020408', textColor: '#94a3b8' },
+            grid: { vertLines: { color: 'rgba(30, 41, 59, 0.25)' }, horzLines: { color: 'rgba(30, 41, 59, 0.25)' } },
             crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
             priceScale: { borderColor: '#1e293b' },
             timeScale: { borderColor: '#1e293b', timeVisible: true, secondsVisible: false },
         });
 
         const candlestickSeries = chart.addCandlestickSeries({
-            upColor: '#22c55e',
-            downColor: '#ef4444',
-            borderVisible: true,
-            borderUpColor: '#22c55e',
-            borderDownColor: '#ef4444',
-            wickUpColor: '#22c55e',
-            wickDownColor: '#ef4444',
+            upColor: '#22c55e', downColor: '#ef4444', borderVisible: true,
+            borderUpColor: '#22c55e', borderDownColor: '#ef4444', wickUpColor: '#22c55e', wickDownColor: '#ef4444'
         });
 
         const volumeSeries = chart.addHistogramSeries({
-            color: '#26a69a',
-            priceFormat: { type: 'volume' },
-            priceScaleId: '',
-            scaleMargins: { top: 0.8, bottom: 0 },
+            color: '#26a69a', priceFormat: { type: 'volume' }, priceScaleId: '', scaleMargins: { top: 0.8, bottom: 0 }
         });
 
         const ema50Series = chart.addLineSeries({ color: '#ffb703', lineWidth: 2, title: 'EMA 50', priceLineVisible: false });
         const ema200Series = chart.addLineSeries({ color: '#00b4d8', lineWidth: 2, title: 'EMA 200', priceLineVisible: false });
 
-        const resLine = chart.addLineSeries({ color: '#ef4444', lineWidth: 1, lineStyle: 2, priceLineVisible: false, title: 'Res' });
-        const supLine = chart.addLineSeries({ color: '#22c55e', lineWidth: 1, lineStyle: 2, priceLineVisible: false, title: 'Sup' });
-
+        // الدوال الحسابية للمؤشرات المؤسسية
         function calculateEMA(candles, period) {
             if (candles.length < period) return [];
             const k = 2 / (period + 1);
             let emaData = [];
             let emaPrev = candles[0].close;
-
             for (let i = 0; i < candles.length; i++) {
                 const close = candles[i].close;
                 if (i === 0) emaPrev = close;
                 else emaPrev = (close * k) + (emaPrev * (1 - k));
-                
-                if (i >= period - 1) {
-                    emaData.push({ time: candles[i].time, value: emaPrev });
-                }
+                if (i >= period - 1) emaData.push({ time: candles[i].time, value: emaPrev });
             }
             return emaData;
         }
 
-        // 5. خوارزمية حساب الإشارات والفلاتر
+        function calculateRSI(candles, period = 14) {
+            let gains = 0, losses = 0;
+            for (let i = 1; i <= period; i++) {
+                let diff = candles[i].close - candles[i - 1].close;
+                if (diff >= 0) gains += diff;
+                else losses -= diff;
+            }
+            let avgGain = gains / period;
+            let avgLoss = losses / period;
+
+            for (let i = period + 1; i < candles.length; i++) {
+                let diff = candles[i].close - candles[i - 1].close;
+                if (diff >= 0) {
+                    avgGain = (avgGain * (period - 1) + diff) / period;
+                    avgLoss = (avgLoss * (period - 1)) / period;
+                } else {
+                    avgGain = (avgGain * (period - 1)) / period;
+                    avgLoss = (avgLoss * (period - 1) - diff) / period;
+                }
+            }
+            let rs = avgGain / (avgLoss || 1);
+            return 100 - (100 / (1 + rs));
+        }
+
+        function calculateStochastic(candles, period = 14) {
+            const slice = candles.slice(-period);
+            const currentClose = candles[candles.length - 1].close;
+            const lowestLow = Math.min(...slice.map(c => c.low));
+            const highestHigh = Math.max(...slice.map(c => c.high));
+            
+            const k = ((currentClose - lowestLow) / ((highestHigh - lowestLow) || 1)) * 100;
+            return k;
+        }
+
+        // 5. محرك حساب دمج المؤشرات الأربعة
         function processInstitutionalFilters(candles, rawVolumeData) {
             if (candles.length < 200) return;
 
-            const lastCandle = candles[candles.length - 1];
-            const lastClose = lastCandle.close;
+            const lastClose = candles[candles.length - 1].close;
             
             const ema50Data = calculateEMA(candles, 50);
             const ema200Data = calculateEMA(candles, 200);
-
             const lastEMA50 = ema50Data[ema50Data.length - 1].value;
             const lastEMA200 = ema200Data[ema200Data.length - 1].value;
 
@@ -402,114 +456,35 @@
             const isBearishTrend = lastClose < lastEMA50 && lastEMA50 < lastEMA200;
 
             if (isBullishTrend) {
-                trendFilterVal.innerText = "STRONG BULLISH 🟢";
+                trendFilterVal.innerText = "BULLISH 🟢";
                 trendFilterVal.style.color = "#22c55e";
             } else if (isBearishTrend) {
-                trendFilterVal.innerText = "STRONG BEARISH 🔴";
+                trendFilterVal.innerText = "BEARISH 🔴";
                 trendFilterVal.style.color = "#ef4444";
             } else {
-                trendFilterVal.innerText = "SIDEWAYS ⚪";
+                trendFilterVal.innerText = "NEUTRAL ⚪";
                 trendFilterVal.style.color = "#94a3b8";
             }
+
+            const rsiVal = calculateRSI(candles, 14);
+            rsiFilterVal.innerText = rsiVal.toFixed(1);
+            if (rsiVal > 70) rsiFilterVal.style.color = "#ef4444";
+            else if (rsiVal < 30) rsiFilterVal.style.color = "#22c55e";
+            else rsiFilterVal.style.color = "#f59e0b";
+
+            const stochK = calculateStochastic(candles, 14);
+            stochFilterVal.innerText = `%K: ${stochK.toFixed(1)}`;
+            if (stochK < 20) stochFilterVal.style.color = "#22c55e";
+            else if (stochK > 80) stochFilterVal.style.color = "#ef4444";
+            else stochFilterVal.style.color = "#94a3b8";
 
             const recentVolumes = rawVolumeData.slice(-20);
             const avgVol = recentVolumes.reduce((acc, curr) => acc + curr.value, 0) / 20;
             const lastVol = rawVolumeData[rawVolumeData.length - 1].value;
+            const isHighLiquidity = lastVol > avgVol * 1.2;
 
-            const isHighLiquidity = lastVol > avgVol * 1.25;
             if (isHighLiquidity) {
-                volFilterVal.innerText = "HIGH LIQUIDITY ⚡";
+                volFilterVal.innerText = "HIGH ⚡";
                 volFilterVal.style.color = "#ffb703";
             } else {
-                volFilterVal.innerText = "NORMAL 💧";
-                volFilterVal.style.color = "#94a3b8";
-            }
-
-            const recentCandles = candles.slice(-50);
-            const highestRes = Math.max(...recentCandles.map(c => c.high));
-            const lowestSup = Math.min(...recentCandles.map(c => c.low));
-
-            srFilterVal.innerText = `R:${highestRes.toFixed(1)} | S:${lowestSup.toFixed(1)}`;
-            srFilterVal.style.color = "#00b4d8";
-
-            const resData = candles.map(c => ({ time: c.time, value: highestRes }));
-            const supData = candles.map(c => ({ time: c.time, value: lowestSup }));
-            resLine.setData(resData);
-            supLine.setData(supData);
-
-            let signalText = "⚪ WAIT";
-            let signalClass = "signal-wait";
-            let power = 50;
-
-            if (isBullishTrend && isHighLiquidity) {
-                signalText = "🟢 STRONG BUY";
-                signalClass = "signal-buy";
-                power = 95;
-            } else if (isBullishTrend) {
-                signalText = "🟢 BUY";
-                signalClass = "signal-buy";
-                power = 80;
-            } else if (isBearishTrend && isHighLiquidity) {
-                signalText = "🔴 STRONG SELL";
-                signalClass = "signal-sell";
-                power = 95;
-            } else if (isBearishTrend) {
-                signalText = "🔴 SELL";
-                signalClass = "signal-sell";
-                power = 80;
-            } else {
-                signalText = "⚪ NO CLEAR SETUP";
-                signalClass = "signal-wait";
-                power = 40;
-            }
-
-            signalTagElement.innerText = signalText;
-            signalTagElement.className = `signal-tag ${signalClass}`;
-            signalPowerElement.innerText = `${power}%`;
-
-            // فحص وإرسال الإشعارات التلقائية
-            const now = Date.now();
-            if ((signalText.includes("STRONG BUY") || signalText.includes("STRONG SELL")) && 
-                (signalText !== lastSentSignal || (now - lastSentTime > 300000))) {
-                
-                lastSentSignal = signalText;
-                lastSentTime = now;
-                playAlertSound(signalText.includes("BUY"));
-                sendTelegramAlert(signalText, lastClose.toFixed(2), currentTimeframe);
-            }
-
-            if (showEMAs) {
-                ema50Series.setData(ema50Data);
-                ema200Series.setData(ema200Data);
-            } else {
-                ema50Series.setData([]);
-                ema200Series.setData([]);
-            }
-        }
-
-        async function loadChartData() {
-            const klineUrl = `https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${currentTimeframe}&limit=300`;
-            try {
-                const response = await fetch(klineUrl);
-                const data = await response.json();
-
-                if (data && data.retCode === 0 && data.result && data.result.list) {
-                    const list = data.result.list.reverse();
-
-                    const formattedCandles = list.map(d => ({
-                        time: parseInt(d[0]) / 1000,
-                        open: parseFloat(d[1]),
-                        high: parseFloat(d[2]),
-                        low: parseFloat(d[3]),
-                        close: parseFloat(d[4])
-                    }));
-
-                    const formattedVolume = list.map(d => ({
-                        time: parseInt(d[0]) / 1000,
-                        value: parseFloat(d[5]),
-                        color: parseFloat(d[4]) >= parseFloat(d[1]) ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)'
-                    }));
-
-                    candlestickSeries.setData(formattedCandles);
-
- 
+            
