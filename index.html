@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold - Scalping SR Engine</title>
+    <title>Mika Pro Gold - Ultimate Scalping Engine</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -171,7 +171,7 @@
 
         .tf-btn.active { background: #3b82f6; color: #0b0f19; border-color: #3b82f6; }
         .btn-ema.active { background: rgba(59, 130, 246, 0.2); color: #3b82f6; border-color: #3b82f6; }
-        .btn-vol.active { background: rgba(16, 185, 129, 0.2); color: #10b981; border-color: #10b981; }
+        .btn-vwap.active { background: rgba(168, 85, 247, 0.2); color: #a855f7; border-color: #a855f7; }
 
         .chart-container { 
             width: 100%; 
@@ -188,11 +188,11 @@
 <body>
 
     <div class="top-price-card">
-        <div class="header-title">🤖 Mika Pro Gold - Scalping SR</div>
+        <div class="header-title">🤖 Mika Pro Gold - Ultimate Scalping Engine</div>
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● نظام الدعم السريع للتداول اللحظي مفعل...</div>
+        <div id="status" class="status-badge">● محرك السكالبينغ المدمج (ATR + VWAP + MACD) مفعل...</div>
         
         <div class="signal-container">
             <span id="signalTag" class="signal-tag signal-wait">🛡️ WAITING FOR 70%+ CONFIDENCE...</span>
@@ -214,25 +214,25 @@
 
     <div class="filters-dashboard">
         <div class="filter-card">
-            <div class="filter-label">📊 RSI SCORE</div>
-            <div id="rsiFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
+            <div class="filter-label">📊 VWAP FAIR PRICE</div>
+            <div id="vwapFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">⚡ STOCHASTIC SCORE</div>
-            <div id="stochFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
+            <div class="filter-label">⚡ MACD MOMENTUM</div>
+            <div id="macdFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">📏 EXACT DISTANCE FROM EMA 50</div>
-            <div id="emaDistVal" class="filter-value" style="color: #94a3b8;">--</div>
+            <div class="filter-label">📈 DYNAMIC ATR VOLATILITY</div>
+            <div id="atrFilterVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
-            <div class="filter-label">📈 MARKET MOMENTUM</div>
-            <div id="emaTrendVal" class="filter-value" style="color: #94a3b8;">--</div>
+            <div class="filter-label">🎯 RSI / STOCHASTIC</div>
+            <div id="rsiStochVal" class="filter-value" style="color: #94a3b8;">--</div>
         </div>
         <div class="filter-card">
             <div class="filter-label">🛡️ SCALPING S/R ZONES</div>
             <div id="srRetestVal" class="filter-value" style="color: #94a3b8;">--</div>
-            <div style="font-size: 0.60rem; color: #64748b; margin-top: 3px;">(محسوبة من آخر 35 شمعة للتداول السريع)</div>
+            <div style="font-size: 0.60rem; color: #64748b; margin-top: 3px;">(آخر 35 شمعة)</div>
         </div>
         <div class="filter-card">
             <div class="filter-label">💧 VOLUME FILTER</div>
@@ -250,8 +250,8 @@
                 <button class="tf-btn" onclick="changeTimeframe('240')">4h</button>
             </div>
             <div class="indicator-group">
-                <button id="emaToggle" class="indicator-btn btn-ema active" onclick="toggleEMA()">EMA 20/50/200</button>
-                <button id="volToggle" class="indicator-btn btn-vol active" onclick="toggleVolume()">Volume</button>
+                <button id="emaToggle" class="indicator-btn btn-ema active" onclick="toggleEMA()">EMA 50/200</button>
+                <button id="vwapToggle" class="indicator-btn btn-vwap active" onclick="toggleVWAP()">VWAP</button>
             </div>
         </div>
 
@@ -270,17 +270,17 @@
         const tp2ValElement = document.getElementById('tp2Val');
         const executeBtn = document.getElementById('executeBtn');
 
-        const rsiFilterVal = document.getElementById('rsiFilterVal');
-        const stochFilterVal = document.getElementById('stochFilterVal');
-        const emaDistVal = document.getElementById('emaDistVal');
-        const emaTrendVal = document.getElementById('emaTrendVal');
+        const vwapFilterVal = document.getElementById('vwapFilterVal');
+        const macdFilterVal = document.getElementById('macdFilterVal');
+        const atrFilterVal = document.getElementById('atrFilterVal');
+        const rsiStochVal = document.getElementById('rsiStochVal');
         const srRetestVal = document.getElementById('srRetestVal');
         const volNewsVal = document.getElementById('volNewsVal');
         
         let lastLivePrice = 0;
         let currentTimeframe = '15';
         let showEMAs = true;
-        let showVolume = true;
+        let showVWAP = true;
         let currentTradeSetup = null;
 
         let fixedSupport = null;
@@ -299,21 +299,9 @@
             borderUpColor: '#22c55e', borderDownColor: '#ef4444', wickUpColor: '#22c55e', wickDownColor: '#ef4444'
         });
 
-        const volumeSeries = chart.addHistogramSeries({
-            color: '#26a69a', 
-            priceFormat: { type: 'volume' },
-            priceScaleId: '',
-            lastValueVisible: false,
-            priceLineVisible: false
-        });
-
-        volumeSeries.priceScale().applyOptions({
-            scaleMargins: { top: 0.8, bottom: 0 },
-        });
-
-        const ema20Series = chart.addLineSeries({ color: '#f59e0b', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false });
-        const ema50Series = chart.addLineSeries({ color: '#3b82f6', lineWidth: 2.5, priceLineVisible: false, lastValueVisible: false });
-        const ema200Series = chart.addLineSeries({ color: '#ec4899', lineWidth: 3, priceLineVisible: false, lastValueVisible: false });
+        const ema50Series = chart.addLineSeries({ color: '#3b82f6', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+        const ema200Series = chart.addLineSeries({ color: '#ec4899', lineWidth: 2.5, priceLineVisible: false, lastValueVisible: false });
+        const vwapSeries = chart.addLineSeries({ color: '#a855f7', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
 
         function calculateEMA(candles, period) {
             if (candles.length < period) return [];
@@ -330,6 +318,47 @@
                 emaData.push({ time: candles[i].time, value: prevEMA });
             }
             return emaData;
+        }
+
+        // حساب مؤشر السعر العادل VWAP
+        function calculateVWAP(candles, volumes) {
+            if (candles.length === 0 || volumes.length === 0) return [];
+            let vwapData = [];
+            let cumulativeTPV = 0;
+            let cumulativeVolume = 0;
+
+            for (let i = 0; i < candles.length; i++) {
+                const typicalPrice = (candles[i].high + candles[i].low + candles[i].close) / 3;
+                const vol = volumes[i] ? volumes[i].value : 0;
+                cumulativeTPV += typicalPrice * vol;
+                cumulativeVolume += vol;
+                
+                const vwapVal = cumulativeVolume > 0 ? cumulativeTPV / cumulativeVolume : typicalPrice;
+                vwapData.push({ time: candles[i].time, value: vwapVal });
+            }
+            return vwapData;
+        }
+
+        // حساب مؤشر الزخم MACD
+        function calculateMACD(candles) {
+            const ema12 = calculateEMA(candles, 12);
+            const ema26 = calculateEMA(candles, 26);
+            if (ema12.length === 0 || ema26.length === 0) return { macd: 0, signal: 0 };
+            
+            let macdLine = [];
+            for (let i = 0; i < candles.length; i++) {
+                const e12 = ema12.find(e => e.time === candles[i].time);
+                const e26 = ema26.find(e => e.time === candles[i].time);
+                if (e12 && e26) {
+                    macdLine.push({ time: candles[i].time, value: e12.value - e26.value });
+                }
+            }
+            if (macdLine.length < 9) return { macd: 0, signal: 0 };
+            const signalLineData = calculateEMA(macdLine.map(m => ({ time: m.time, close: m.value })), 9);
+            
+            const lastMacd = macdLine[macdLine.length - 1].value;
+            const lastSignal = signalLineData.length > 0 ? signalLineData[signalLineData.length - 1].value : 0;
+            return { macd: lastMacd, signal: lastSignal };
         }
 
         function calculateRSI(candles, period = 14) {
@@ -366,7 +395,20 @@
             return ((currentClose - lowestLow) / ((highestHigh - lowestLow) || 1)) * 100;
         }
 
-        // تم تعديل النطاق هنا إلى آخر 35 شمعة لتناسب التداول السريع (Scalping) وتكون المستويات قريبة من السعر
+        function calculateATR(candles, period = 14) {
+            if (candles.length < period + 1) return 5.0;
+            let trList = [];
+            for (let i = 1; i < candles.length; i++) {
+                const high = candles[i].high;
+                const low = candles[i].low;
+                const prevClose = candles[i - 1].close;
+                const tr = Math.max(high - low, Math.abs(high - prevClose), Math.abs(low - prevClose));
+                trList.push(tr);
+            }
+            const recentTR = trList.slice(-period);
+            return recentTR.reduce((acc, val) => acc + val, 0) / period;
+        }
+
         function calculateFixedSR(candles) {
             if (candles.length < 20) return;
             const historicalSlice = candles.slice(-35);
@@ -381,35 +423,31 @@
 
             calculateFixedSR(candles);
 
-            const ema20Data = calculateEMA(candles, 20);
             const ema50Data = calculateEMA(candles, 50);
             const ema200Data = calculateEMA(candles, 200);
+            const vwapData = calculateVWAP(candles, rawVolumeData);
 
             const lastEMA50 = ema50Data[ema50Data.length - 1].value;
             const lastEMA200 = ema200Data[ema200Data.length - 1].value;
-
-            const distFromEMA50 = activePrice - lastEMA50;
-            const pctDist = (distFromEMA50 / lastEMA50) * 100;
-
-            emaDistVal.innerHTML = `<span dir="ltr">${distFromEMA50 > 0 ? '+' : ''}${distFromEMA50.toFixed(2)}$ (${pctDist.toFixed(2)}%)</span>`;
-            emaDistVal.style.color = Math.abs(pctDist) <= 0.8 ? "#22c55e" : "#3b82f6";
+            const lastVWAP = vwapData[vwapData.length - 1].value;
 
             const rsiVal = calculateRSI(candles, 14);
             const stochK = calculateStochastic(candles, 14);
+            const atrVal = calculateATR(candles, 14);
+            const macdObj = calculateMACD(candles);
 
-            rsiFilterVal.innerHTML = `<span dir="ltr">${rsiVal.toFixed(1)}</span> (${rsiVal > 60 ? 'OVERBOUGHT 🔴' : (rsiVal < 40 ? 'OVERSOLD 🟢' : 'NEUTRAL ⚖️')})`;
-            rsiFilterVal.style.color = rsiVal > 60 ? "#ef4444" : (rsiVal < 40 ? "#22c55e" : "#94a3b8");
+            // تحديث البطاقات
+            vwapFilterVal.innerHTML = `<span dir="ltr">$${lastVWAP.toFixed(1)}</span> (${activePrice >= lastVWAP ? 'BULLISH 🟢' : 'BEARISH 🔴'})`;
+            vwapFilterVal.style.color = activePrice >= lastVWAP ? "#22c55e" : "#ef4444";
 
-            stochFilterVal.innerHTML = `%K: <span dir="ltr">${stochK.toFixed(1)}</span> (${stochK > 70 ? 'OVERBOUGHT 🔴' : (stochK < 30 ? 'OVERSOLD 🟢' : 'NEUTRAL ⚖️')})`;
-            stochFilterVal.style.color = stochK > 70 ? "#ef4444" : (stochK < 30 ? "#22c55e" : "#94a3b8");
+            macdFilterVal.innerHTML = `MACD: <span dir="ltr">${macdObj.macd > macdObj.signal ? 'BULLISH 🚀' : 'BEARISH 💥'}</span>`;
+            macdFilterVal.style.color = macdObj.macd > macdObj.signal ? "#22c55e" : "#ef4444";
 
-            const recentVols = rawVolumeData.slice(-20);
-            const avgVol = recentVols.reduce((acc, curr) => acc + curr.value, 0) / 20;
-            const lastVol = rawVolumeData[rawVolumeData.length - 1].value;
-            const hasGoodVolume = lastVol >= avgVol * 1.0;
+            atrFilterVal.innerHTML = `<span dir="ltr">ATR: $${atrVal.toFixed(2)}</span>`;
+            atrFilterVal.style.color = "#3b82f6";
 
-            volNewsVal.innerHTML = `VOL: <span dir="ltr">${lastVol.toFixed(0)}</span> (${hasGoodVolume ? 'ACTIVE 🟢' : 'WEAK ⚠️'})`;
-            volNewsVal.style.color = hasGoodVolume ? "#22c55e" : "#ef4444";
+            rsiStochVal.innerHTML = `RSI: <span dir="ltr">${rsiVal.toFixed(0)}</span> | Stoch: <span dir="ltr">${stochK.toFixed(0)}</span>`;
+            rsiStochVal.style.color = "#94a3b8";
 
             srRetestVal.innerHTML = `<span dir="ltr">S: $${fixedSupport.toFixed(1)}</span> | <span dir="ltr">R: $${fixedResistance.toFixed(1)}</span>`;
             srRetestVal.style.color = "#3b82f6";
@@ -417,39 +455,17 @@
             let bullishScore = 0;
             let bearishScore = 0;
 
-            if (activePrice > lastEMA50 && lastEMA50 > lastEMA200) {
-                bullishScore += 35;
-            } else if (activePrice < lastEMA50 && lastEMA50 < lastEMA200) {
-                bearishScore += 35;
-            } else {
-                if (activePrice > lastEMA50) bullishScore += 18;
-                else bearishScore += 18;
-            }
+            if (activePrice > lastVWAP) bullishScore += 25;
+            else bearishScore += 25;
 
-            if (rsiVal < 45) {
-                bullishScore += 25;
-            } else if (rsiVal > 55) {
-                bearishScore += 25;
-            } else {
-                if (rsiVal >= 50) bearishScore += 12;
-                else bullishScore += 12;
-            }
+            if (macdObj.macd > macdObj.signal) bullishScore += 25;
+            else bearishScore += 25;
 
-            if (stochK < 40) {
-                bullishScore += 25;
-            } else if (stochK > 60) {
-                bearishScore += 25;
-            } else {
-                if (stochK >= 50) bearishScore += 12;
-                else bullishScore += 12;
-            }
+            if (rsiVal < 50) bullishScore += 25;
+            else bearishScore += 25;
 
-            const prevClose = candles[candles.length - 2].close;
-            if (activePrice >= prevClose) {
-                bullishScore += 15;
-            } else {
-                bearishScore += 15;
-            }
+            if (stochK < 50) bullishScore += 25;
+            else bearishScore += 25;
 
             let totalScore = bullishScore + bearishScore;
             let bullPercentage = totalScore > 0 ? Math.round((bullishScore / totalScore) * 100) : 50;
@@ -467,10 +483,9 @@
                 signalText = isStrong ? `🟢 [إشارة قوية] صعود بنسبة <span dir="ltr">${confidenceScore}%</span> (BUY)` : `🟡 [إشارة جيدة] صعود بنسبة <span dir="ltr">${confidenceScore}%</span> (BUY)`;
                 signalClass = isStrong ? "signal-strong" : "signal-good";
 
-                const multiplier = isStrong ? 1.2 : 1.0;
-                const slPrice = activePrice - (4.0 * multiplier); // مسافات أصغر تناسب السكالبينج
-                const tp1Price = activePrice + (6.0 * multiplier);
-                const tp2Price = activePrice + (12.0 * multiplier);
+                const slPrice = activePrice - (atrVal * 1.2);
+                const tp1Price = activePrice + (atrVal * 1.8);
+                const tp2Price = activePrice + (atrVal * 3.2);
 
                 sl = slPrice.toFixed(2);
                 tp1 = tp1Price.toFixed(2);
@@ -480,7 +495,7 @@
                 
                 executeBtn.disabled = false;
                 executeBtn.className = `execute-btn ${isStrong ? 'strong-buy-active' : 'good-active'}`;
-                executeBtn.innerHTML = isStrong ? `🚀 تنفيذ صفقة شراء قوية (BUY) - ثقة <span dir="ltr">${confidenceScore}%</span>` : `⚠️ تنفيذ صفقة شراء جيدة (BUY) - ثقة <span dir="ltr">${confidenceScore}%</span>`;
+                executeBtn.innerHTML = isStrong ? `🚀 تنفيذ شراء (BUY) - ثقة <span dir="ltr">${confidenceScore}%</span>` : `⚠️ تنفيذ شراء (BUY) - ثقة <span dir="ltr">${confidenceScore}%</span>`;
 
             } else if (bearPercentage >= 70) {
                 confidenceScore = bearPercentage;
@@ -489,10 +504,9 @@
                 signalText = isStrong ? `🔴 [إشارة قوية] هبوط بنسبة <span dir="ltr">${confidenceScore}%</span> (SELL)` : `🟡 [إشارة جيدة] هبوط بنسبة <span dir="ltr">${confidenceScore}%</span> (SELL)`;
                 signalClass = isStrong ? "signal-strong-sell" : "signal-good";
 
-                const multiplier = isStrong ? 1.2 : 1.0;
-                const slPrice = activePrice + (4.0 * multiplier);
-                const tp1Price = activePrice - (6.0 * multiplier);
-                const tp2Price = activePrice - (12.0 * multiplier);
+                const slPrice = activePrice + (atrVal * 1.2);
+                const tp1Price = activePrice - (atrVal * 1.8);
+                const tp2Price = activePrice - (atrVal * 3.2);
 
                 sl = slPrice.toFixed(2);
                 tp1 = tp1Price.toFixed(2);
@@ -502,7 +516,7 @@
                 
                 executeBtn.disabled = false;
                 executeBtn.className = `execute-btn ${isStrong ? 'strong-sell-active' : 'good-active'}`;
-                executeBtn.innerHTML = isStrong ? `💥 تنفيذ صفقة بيع قوية (SELL) - ثقة <span dir="ltr">${confidenceScore}%</span>` : `⚠️ تنفيذ صفقة بيع جيدة (SELL) - ثقة <span dir="ltr">${confidenceScore}%</span>`;
+                executeBtn.innerHTML = isStrong ? `💥 تنفيذ بيع (SELL) - ثقة <span dir="ltr">${confidenceScore}%</span>` : `⚠️ تنفيذ بيع (SELL) - ثقة <span dir="ltr">${confidenceScore}%</span>`;
 
             } else {
                 currentTradeSetup = null;
@@ -517,39 +531,30 @@
 
             signalTagElement.innerHTML = signalText;
             signalTagElement.className = `signal-tag ${signalClass}`;
-            signalPowerElement.innerHTML = `<span dir="ltr">${confidenceScore}%</span> (صعود: <span dir="ltr">${bullPercentage}%</span> - هبوط: <span dir="ltr">${bearPercentage}%</span>)`;
+            signalPowerElement.innerHTML = `<span dir="ltr">${confidenceScore}%</span>`;
 
             slValElement.innerHTML = sl !== "---" ? `<span dir="ltr">$${sl}</span>` : "---";
             tp1ValElement.innerHTML = tp1 !== "---" ? `<span dir="ltr">$${tp1}</span>` : "---";
             tp2ValElement.innerHTML = tp2 !== "---" ? `<span dir="ltr">$${tp2}</span>` : "---";
 
-            emaTrendVal.innerHTML = `صعود: <span dir="ltr">${bullPercentage}%</span> | هبوط: <span dir="ltr">${bearPercentage}%</span>`;
-            emaTrendVal.style.color = bullPercentage > bearPercentage ? "#22c55e" : "#ef4444";
-
             if (showEMAs) {
-                ema20Series.setData(ema20Data);
                 ema50Series.setData(ema50Data);
                 ema200Series.setData(ema200Data);
             } else {
-                ema20Series.setData([]);
                 ema50Series.setData([]);
                 ema200Series.setData([]);
+            }
+
+            if (showVWAP) {
+                vwapSeries.setData(vwapData);
+            } else {
+                vwapSeries.setData([]);
             }
         }
 
         function executeOrder() {
             if (!currentTradeSetup) return;
-            const typeText = currentTradeSetup.type === 'BUY' ? 'شراء (BUY)' : 'بيع (SELL)';
-            const strengthText = currentTradeSetup.isStrong ? '🔥 قوية جداً (80%-100%)' : '⚡ جيدة (70%-79%)';
-            
-            alert(`✅ تم إرسال وتفعيل الصفقة بنجاح!\n\n` +
-                  `🔹 النوع: ${typeText}\n` +
-                  `🔹 قوة الإشارة: ${strengthText}\n` +
-                  `🔹 سعر الدخول: $${currentTradeSetup.entry}\n` +
-                  `🛡️ وقف الخسارة (SL): $${currentTradeSetup.sl}\n` +
-                  `🎯 الهدف الأول (TP1): $${currentTradeSetup.tp1}\n` +
-                  `🎯 الهدف الثاني (TP2): $${currentTradeSetup.tp2}\n\n` +
-                  `بالتوفيق في تداولاتك السريعة! 🚀`);
+            alert(`✅ تم تنفيذ صفقة الـ Scalping بنجاح!\nالنوع: ${currentTradeSetup.type}\nالدخول: $${currentTradeSetup.entry}\nSL: $${currentTradeSetup.sl}\nTP1: $${currentTradeSetup.tp1}`);
         }
 
         async function loadChartData() {
@@ -569,14 +574,10 @@
 
                     globalVolumes = list.map(d => ({
                         time: parseInt(d[0]) / 1000,
-                        value: parseFloat(d[5]),
-                        color: parseFloat(d[4]) >= parseFloat(d[1]) ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)'
+                        value: parseFloat(d[5])
                     }));
 
                     candlestickSeries.setData(globalCandles);
-                    if (showVolume) volumeSeries.setData(globalVolumes);
-                    else volumeSeries.setData([]);
-
                     analyzeMarket(globalCandles, globalVolumes);
 
                     chart.timeScale().setVisibleLogicalRange({
@@ -599,7 +600,6 @@
                     }
                     lastLivePrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-                    statusElement.innerText = "● نظام الدعم السريع للتداول اللحظي مفعل";
 
                     if (globalCandles.length > 0) {
                         analyzeMarket(globalCandles, globalVolumes);
@@ -612,8 +612,6 @@
             currentTimeframe = tf;
             document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
-            fixedSupport = null;
-            fixedResistance = null;
             loadChartData();
         }
 
@@ -623,9 +621,9 @@
             loadChartData();
         }
 
-        function toggleVolume() {
-            showVolume = !showVolume;
-            document.getElementById('volToggle').classList.toggle('active', showVolume);
+        function toggleVWAP() {
+            showVWAP = !showVWAP;
+            document.getElementById('vwapToggle').classList.toggle('active', showVWAP);
             loadChartData();
         }
 
