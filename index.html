@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold - Ultra Fast Lightning Engine</title>
+    <title>Mika Pro Gold - Dynamic Momentum Engine</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -169,7 +169,76 @@
     </style>
 </head>
 <body>
-       <script>
+
+    <div class="top-price-card">
+        <div class="header-title">🛡️ Mika Dynamic Scalper - محرك الزخم المرن</div>
+        <div class="symbol-name">Bybit Futures - XAUUSDT</div>
+        
+        <div id="price" class="price-display">جاري التحميل...</div>
+        <div id="status" class="status-badge">● تحديث فوري فائق السرعة (400ms)</div>
+        
+        <div class="signal-container">
+            <span id="signalTag" class="signal-tag signal-wait">⏳ بانتظار استقرار الزخم...</span>
+            <span class="signal-power">الحالة: <strong id="signalPower" style="color: #fff;">ترقب لحظي</strong></span>
+        </div>
+
+        <div class="targets-box">
+            <div class="target-item">وقف خسارة (SL): <span id="slVal">---</span></div>
+            <div class="target-item">هدف أول (TP1): <span id="tp1Val">---</span></div>
+            <div class="target-item">هدف ثاني (TP2): <span id="tp2Val">---</span></div>
+        </div>
+
+        <div class="trade-action-box">
+            <button id="executeBtn" class="execute-btn wait-active" onclick="executeOrder()">
+                ⏳ بانتظار استقرار الزخم
+            </button>
+        </div>
+    </div>
+
+    <div class="filters-dashboard">
+        <div class="filter-card">
+            <div class="filter-label">📊 VWAP FILTER</div>
+            <div id="vwapFilterVal" class="filter-value" style="color: #3b82f6;">--</div>
+        </div>
+        <div class="filter-card">
+            <div class="filter-label">⚡ SPEED ENGINE</div>
+            <div id="macdFilterVal" class="filter-value" style="color: #3b82f6;">--</div>
+        </div>
+        
+        <div class="filter-card" style="grid-column: span 2;">
+            <div class="filter-label" style="display: flex; justify-content: space-between;">
+                <span>🕯️ قوة الشمعة الحالية (Candle Power)</span>
+                <span id="candleTimer" style="color: #3b82f6;">--</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: bold; margin: 5px 0 3px 0;">
+                <span id="bullishPercentText" style="color: #22c55e;">صعود: 50%</span>
+                <span id="bearishPercentText" style="color: #ef4444;">هبوط: 50%</span>
+            </div>
+            <div style="width: 100%; background: #1e293b; height: 7px; border-radius: 4px; overflow: hidden; display: flex;">
+                <div id="bullishBar" style="width: 50%; background: #22c55e; transition: width 0.2s ease;"></div>
+                <div id="bearishBar" style="width: 50%; background: #ef4444; transition: width 0.2s ease;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chart-card">
+        <div class="chart-toolbar">
+            <div class="tf-group">
+                <button class="tf-btn active" onclick="changeTimeframe('1')">1m</button>
+                <button class="tf-btn" onclick="changeTimeframe('5')">5m</button>
+                <button class="tf-btn" onclick="changeTimeframe('15')">15m</button>
+            </div>
+            <div class="indicator-group">
+                <button id="emaToggle" class="indicator-btn btn-ema active" onclick="toggleEMA()">EMA</button>
+                <button id="vwapToggle" class="indicator-btn btn-vwap active" onclick="toggleVWAP()">VWAP</button>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div id="chart"></div>
+        </div>
+    </div>
+        <script>
         const priceElement = document.getElementById('price');
         const signalTagElement = document.getElementById('signalTag');
         const signalPowerElement = document.getElementById('signalPower');
@@ -255,7 +324,6 @@
             
             let currentCandle = candles[candles.length - 1];
             
-            // تحديث قمة وبقاع الشمعة الحالية فورياً مع السعر الحي السريع
             if (activePrice > currentCandle.high) currentCandle.high = activePrice;
             if (activePrice < currentCandle.low) currentCandle.low = activePrice;
             currentCandle.close = activePrice;
@@ -317,46 +385,48 @@
                 }
             }
 
-            const targetOffsetTP = 1.2; 
-            const targetOffsetSL = 1.5; 
+            // --- أهداف ديناميكية تتناسب مع طول الشمعة وزخمها الحالي ---
+            const currentCandleRange = globalCandles[globalCandles.length - 1].high - globalCandles[globalCandles.length - 1].low;
+            const dynamicTP = Math.max(2.5, currentCandleRange * 0.45); // TP مرن بحد أدنى 2.5$ ويزيد مع قوة الشمعة
+            const dynamicSL = Math.max(2.0, currentCandleRange * 0.5);  // SL يتناسب مع حركة الشمعة
 
             if (signalType === 'BUY') {
-                const slPrice = activePrice - targetOffsetSL;
-                const tp1Price = activePrice + targetOffsetTP;
-                const tp2Price = activePrice + (targetOffsetTP * 2);
+                const slPrice = activePrice - dynamicSL;
+                const tp1Price = activePrice + dynamicTP;
+                const tp2Price = activePrice + (dynamicTP * 1.8);
 
                 currentTradeSetup = { type: 'BUY', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
                 
-                signalTagElement.innerHTML = `🟢 شراء مؤكد ووثبت (BUY)`;
+                signalTagElement.innerHTML = `🟢 شراء مؤكد وقوي (BUY)`;
                 signalTagElement.className = `signal-tag signal-strong`;
-                signalPowerElement.innerHTML = `<span dir="ltr">مستقر (صعود)</span>`;
+                signalPowerElement.innerHTML = `<span dir="ltr">زخم صاعد قوي</span>`;
 
                 slValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.sl}</span>`;
                 tp1ValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.tp1}</span>`;
                 tp2ValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.tp2}</span>`;
 
                 executeBtn.className = `execute-btn strong-buy-active`;
-                executeBtn.innerHTML = `🚀 تنفيذ شراء (هدف 3-4$) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
+                executeBtn.innerHTML = `🚀 تنفيذ شراء (هدف ديناميكي $${dynamicTP.toFixed(1)}) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
             } else if (signalType === 'SELL') {
-                const slPrice = activePrice + targetOffsetSL;
-                const tp1Price = activePrice - targetOffsetTP;
-                const tp2Price = activePrice - (targetOffsetTP * 2);
+                const slPrice = activePrice + dynamicSL;
+                const tp1Price = activePrice - dynamicTP;
+                const tp2Price = activePrice - (dynamicTP * 1.8);
 
                 currentTradeSetup = { type: 'SELL', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
                 
-                signalTagElement.innerHTML = `🔴 بيع مؤكد ومثبت (SELL)`;
+                signalTagElement.innerHTML = `🔴 بيع مؤكد وقوي (SELL)`;
                 signalTagElement.className = `signal-tag signal-strong-sell`;
-                signalPowerElement.innerHTML = `<span dir="ltr">مستقر (هبوط)</span>`;
+                signalPowerElement.innerHTML = `<span dir="ltr">زخم هابط قوي</span>`;
 
                 slValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.sl}</span>`;
                 tp1ValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.tp1}</span>`;
                 tp2ValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.tp2}</span>`;
 
                 executeBtn.className = `execute-btn strong-sell-active`;
-                executeBtn.innerHTML = `💥 تنفيذ بيع (هدف 3-4$) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
+                executeBtn.innerHTML = `💥 تنفيذ بيع (هدف ديناميكي $${dynamicTP.toFixed(1)}) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
             } else {
                 currentTradeSetup = null;
-                signalTagElement.innerHTML = `⏳ بانتظار استقرار السيولة...`;
+                signalTagElement.innerHTML = `⏳ بانتظار استقرار الزخم...`;
                 signalTagElement.className = `signal-tag signal-wait`;
                 signalPowerElement.innerHTML = `<span dir="ltr">ترقب لحظي</span>`;
 
@@ -369,7 +439,7 @@
             }
 
             vwapFilterVal.innerHTML = `<span dir="ltr">${activePrice >= currentVwap ? 'فوق VWAP' : 'تحت VWAP'}</span>`;
-            macdFilterVal.innerHTML = `<span dir="ltr">تحديث فوري نشط</span>`;
+            macdFilterVal.innerHTML = `<span dir="ltr">نبض فوري (400ms)</span>`;
 
             candlestickSeries.update(globalCandles[globalCandles.length - 1]);
 
@@ -393,7 +463,7 @@
                 alert('⚠️ انتظر إشارة واضحة للتنفيذ.');
                 return;
             }
-            alert(`✅ تم التنفيذ بنجاح!\nالنوع: ${currentTradeSetup.type}\nالدخول: $${currentTradeSetup.entry}\nالهدف الأول: $${currentTradeSetup.tp1}\nوقف الخسارة: $${currentTradeSetup.sl}`);
+            alert(`✅ تم التنفيذ بنجاح!\nالنوع: ${currentTradeSetup.type}\nالدخول: $${currentTradeSetup.entry}\nالهدف الأول (TP1): $${currentTradeSetup.tp1}\nالهدف الثاني (TP2): $${currentTradeSetup.tp2}\nوقف الخسارة (SL): $${currentTradeSetup.sl}`);
         }
 
         async function loadChartData() {
@@ -441,7 +511,7 @@
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
 
                     if (globalCandles.length > 0) {
-                        analyzeMarket(); // تحليل فوري مع كل نبضة سعرية
+                        analyzeMarket();
                     }
                 }
             } catch (err) {}
@@ -470,10 +540,7 @@
         loadChartData();
         fetchBybitPrice();
         
-        // تحديث السعر اللحظي كل 400 مللي-ثانية لضمان السرعة الفائقة دون استهلاك الذاكرة
         setInterval(fetchBybitPrice, 400); 
-        
-        // تحديث الشموع الكاملة في الخلفية كل 10 ثوانٍ لضمان المزامنة
         setInterval(loadChartData, 10000);  
     </script>
 </body>
