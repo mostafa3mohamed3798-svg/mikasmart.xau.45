@@ -3,141 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Smart AI - Ultra Dark Dashboard</title>
+    <title>Mika Smart AI - Dual EMA Dashboard</title>
     <!-- مكتبة الرسم البياني المباشرة والمضمونة -->
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
-            background-color: #03050a; 
-            color: #f1f5f9; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background-color: #0b0f19; 
+            color: #fff; 
+            font-family: system-ui, -apple-system, sans-serif; 
             padding: 12px; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            min-height: 100vh;
         }
         
-        /* كارت السعر العلوي الفاخر */
+        /* كارت السعر العلوي بتصميمه الأصلي */
         .top-price-card { 
-            background: linear-gradient(160deg, #0b0f19 0%, #060911 100%); 
-            border-radius: 20px; 
-            padding: 20px; 
+            background: linear-gradient(145deg, #151c2c, #0e1420); 
+            border-radius: 16px; 
+            padding: 18px; 
             width: 100%; 
-            max-width: 580px; 
+            max-width: 550px; 
             text-align: center; 
-            border: 1px solid #1e293b; 
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), inset 0 1px 1px rgba(255, 255, 255, 0.05); 
-            margin-bottom: 14px; 
+            border: 1px solid #232d42; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4); 
+            margin-bottom: 12px; 
         }
         
-        .header-title { font-size: 1.25rem; font-weight: 800; color: #10b981; letter-spacing: 0.5px; margin-bottom: 2px; }
-        .symbol-name { font-size: 0.85rem; color: #64748b; font-weight: 500; margin-bottom: 12px; }
+        .header-title { font-size: 1.2rem; font-weight: bold; color: #10b981; margin-bottom: 4px; }
+        .symbol-name { font-size: 0.85rem; color: #94a3b8; margin-bottom: 10px; }
         
         .price-display { 
-            font-size: 2.8rem; 
-            font-weight: 900; 
+            font-size: 2.7rem; 
+            font-weight: 800; 
             color: #f59e0b; 
-            letter-spacing: 1.5px; 
-            margin: 4px 0; 
+            letter-spacing: 1px; 
+            margin: 6px 0; 
             line-height: 1; 
-            text-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
-            transition: color 0.25s ease, text-shadow 0.25s ease;
+            transition: color 0.3s ease;
         }
-        .status-badge { font-size: 0.8rem; color: #10b981; font-weight: 500; margin-top: 6px; }
+        .status-badge { font-size: 0.8rem; color: #10b981; margin-top: 4px; }
         
         .signal-container { 
             display: flex; 
             justify-content: center; 
             align-items: center; 
-            gap: 16px; 
-            margin-top: 14px; 
-            padding-top: 12px; 
-            border-top: 1px solid rgba(255, 255, 255, 0.06); 
+            gap: 15px; 
+            margin-top: 10px; 
+            padding-top: 10px; 
+            border-top: 1px solid #1e293b; 
         }
-        .signal-tag { 
-            background: rgba(34, 197, 94, 0.12); 
-            color: #4ade80; 
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            padding: 4px 14px; 
-            border-radius: 20px; 
-            font-weight: 700; 
-            font-size: 0.9rem;
-            box-shadow: 0 0 12px rgba(34, 197, 94, 0.15);
-        }
-        .signal-power { color: #94a3b8; font-size: 0.88rem; }
+        .signal-tag { background-color: rgba(34, 197, 94, 0.15); color: #22c55e; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 0.95rem; }
+        .signal-power { color: #94a3b8; font-size: 0.9rem; }
 
-        /* حاوية الشارت الاحترافية */
+        /* حاوية الشارت الخارجية */
         .chart-card {
-            background: #060911; 
-            border-radius: 20px; 
-            padding: 14px; 
+            background: #151c2c; 
+            border-radius: 16px; 
+            padding: 12px; 
             width: 100%; 
-            max-width: 580px; 
-            border: 1px solid #1e293b; 
-            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.03);
+            max-width: 550px; 
+            border: 1px solid #232d42; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
 
-        /* شريط الأدوات والفريمات الزجاجي */
+        /* شريط التحكم بالفريمات والمؤشرات */
         .chart-toolbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
             gap: 8px;
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(8px);
+            background: #0e1420;
             padding: 8px 12px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border: 1px solid #1e293b;
         }
 
-        .tf-group {
+        .tf-group, .indicator-group {
             display: flex;
             gap: 4px;
         }
 
         .tf-btn, .indicator-btn {
-            background: #0f172a;
-            color: #64748b;
-            border: 1px solid #1e293b;
-            padding: 6px 12px;
-            border-radius: 8px;
+            background: #1e293b;
+            color: #94a3b8;
+            border: 1px solid #334155;
+            padding: 5px 10px;
+            border-radius: 6px;
             font-size: 0.8rem;
-            font-weight: 700;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s ease;
         }
 
         .tf-btn:hover, .indicator-btn:hover {
-            color: #f8fafc;
-            border-color: #334155;
+            color: #fff;
+            border-color: #10b981;
         }
 
         .tf-btn.active {
             background: #10b981;
-            color: #022c22;
+            color: #0b0f19;
             border-color: #10b981;
-            box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
         }
 
-        .indicator-btn.active {
-            background: rgba(255, 183, 3, 0.15);
+        .btn-ema50.active {
+            background: rgba(255, 183, 3, 0.2);
             color: #ffb703;
             border-color: #ffb703;
-            box-shadow: 0 0 10px rgba(255, 183, 3, 0.2);
         }
 
+        .btn-ema200.active {
+            background: rgba(0, 180, 216, 0.2);
+            color: #00b4d8;
+            border-color: #00b4d8;
+        }
+
+        /* غلاف الشموع الداخلي أسود عميق وجريء */
         .chart-container { 
             width: 100%; 
             height: 460px; 
             position: relative;
-            border-radius: 12px;
+            border-radius: 10px;
             overflow: hidden;
+            border: 1px solid #000;
         }
 
         #chart {
@@ -153,7 +147,7 @@
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● جاري الاتصال بالسعر الحي...</div>
+        <div id="status" class="status-badge">● جاري الاتصال بالبيانات...</div>
         
         <div class="signal-container">
             <span class="signal-tag">🟢 BUY</span>
@@ -162,7 +156,7 @@
     </div>
 
     <div class="chart-card">
-        <!-- شريط أدوات التحكم بالفريمات والمؤشر -->
+        <!-- شريط الفريمات والمؤشرات -->
         <div class="chart-toolbar">
             <div class="tf-group">
                 <button class="tf-btn" onclick="changeTimeframe('1')">1m</button>
@@ -172,12 +166,13 @@
                 <button class="tf-btn" onclick="changeTimeframe('240')">4h</button>
                 <button class="tf-btn" onclick="changeTimeframe('D')">1D</button>
             </div>
-            <div>
-                <button id="emaToggle" class="indicator-btn active" onclick="toggleEMA()">EMA (20)</button>
+            <div class="indicator-group">
+                <button id="ema50Toggle" class="indicator-btn btn-ema50 active" onclick="toggleEMA(50)">EMA 50</button>
+                <button id="ema200Toggle" class="indicator-btn btn-ema200 active" onclick="toggleEMA(200)">EMA 200</button>
             </div>
         </div>
 
-        <!-- منطقة الرسم الشاملة -->
+        <!-- غلاف الشموع الأسود المميز -->
         <div class="chart-container">
             <div id="chart"></div>
         </div>
@@ -188,62 +183,54 @@
         const statusElement = document.getElementById('status');
         let lastPrice = 0;
         let currentTimeframe = '15';
-        let showEMA = true;
+        let showEMA50 = true;
+        let showEMA200 = true;
 
-        // 1. تهيئة الشارت المحلي بخلفية أسود فاخرة وجماليات متكاملة
+        // 1. تهيئة الشارت: غلاف الشموع أسود داكن خلفيتها #020408
         const chartContainer = document.getElementById('chart');
         const chart = LightweightCharts.createChart(chartContainer, {
             layout: {
-                backgroundColor: '#060911',
-                textColor: '#64748b',
-                fontSize: 12,
-                fontFamily: 'Segoe UI, sans-serif',
+                backgroundColor: '#020408', // غلاف الشموع الأسود فقط
+                textColor: '#94a3b8',
             },
             grid: {
-                vertLines: { color: 'rgba(30, 41, 59, 0.4)', style: 1 },
-                horzLines: { color: 'rgba(30, 41, 59, 0.4)', style: 1 },
+                vertLines: { color: 'rgba(30, 41, 59, 0.3)' },
+                horzLines: { color: 'rgba(30, 41, 59, 0.3)' },
             },
-            crosshair: {
-                mode: LightweightCharts.CrosshairMode.Normal,
-                vertLine: { color: '#334155', width: 1, style: 2, labelBackgroundColor: '#0f172a' },
-                horzLine: { color: '#334155', width: 1, style: 2, labelBackgroundColor: '#0f172a' },
-            },
-            priceScale: { 
-                borderColor: '#1e293b',
-                textColor: '#94a3b8',
-                alignLabels: true,
-            },
-            timeScale: { 
-                borderColor: '#1e293b',
-                timeVisible: true, 
-                secondsVisible: false,
-                textColor: '#94a3b8',
-            },
-            handleScroll: { vertTouchDrag: false },
+            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+            priceScale: { borderColor: '#1e293b' },
+            timeScale: { borderColor: '#1e293b', timeVisible: true, secondsVisible: false },
         });
 
-        // الشموع اليابانية بتفاصيل واقعية وألوان نيون متناسقة
+        // 2. الشموع اليابانية بارزة ومكبرة بألوان حادة واقعية
         const candlestickSeries = chart.addCandlestickSeries({
-            upColor: '#00e676',           // أخضر نيون متوهج للشموع الصاعدة
-            downColor: '#ff1744',         // أحمر نيون قوي للشموع الهابطة
+            upColor: '#22c55e',
+            downColor: '#ef4444',
             borderVisible: true,
-            borderUpColor: '#00e676',
-            borderDownColor: '#ff1744',
-            wickUpColor: '#00e676',       // الفتيل الصاعد
-            wickDownColor: '#ff1744',     // الفتيل الهابط
+            borderUpColor: '#22c55e',
+            borderDownColor: '#ef4444',
+            wickUpColor: '#22c55e',
+            wickDownColor: '#ef4444',
         });
 
-        // خط مؤشر EMA 20 الذهبي
-        const emaSeries = chart.addLineSeries({
-            color: '#ffb703',
+        // 3. خطوط مؤشرات المتوسط المتحرك (EMA 50 & EMA 200)
+        const ema50Series = chart.addLineSeries({
+            color: '#ffb703', // لون ذهبي نيون
             lineWidth: 2,
-            title: 'EMA 20',
-            crosshairMarkerVisible: true,
-            priceLineVisible: false,
+            title: 'EMA 50',
+            priceLineVisible: false
         });
 
-        // 2. خوارزمية حساب المتوسط المتحرك الأسي EMA
-        function calculateEMA(candles, period = 20) {
+        const ema200Series = chart.addLineSeries({
+            color: '#00b4d8', // لون أزرق نيون
+            lineWidth: 2,
+            title: 'EMA 200',
+            priceLineVisible: false
+        });
+
+        // خوارزمية حساب EMA
+        function calculateEMA(candles, period) {
+            if (candles.length < period) return [];
             const k = 2 / (period + 1);
             let emaData = [];
             let emaPrev = candles[0].close;
@@ -262,9 +249,10 @@
             return emaData;
         }
 
-        // 3. جلب بيانات الشموع وتطبيق الرسم المحلي
+        // 4. جلب رسم البيانات وتكبير الشموع
         async function loadChartData() {
-            const klineUrl = `https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${currentTimeframe}&limit=150`;
+            // طلب 300 شمعة لحساب EMA 200 بدقة
+            const klineUrl = `https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${currentTimeframe}&limit=300`;
             try {
                 const response = await fetch(klineUrl);
                 const data = await response.json();
@@ -280,21 +268,32 @@
 
                     candlestickSeries.setData(formattedCandles);
 
-                    if (showEMA) {
-                        const emaData = calculateEMA(formattedCandles, 20);
-                        emaSeries.setData(emaData);
+                    // رسم EMA 50
+                    if (showEMA50) {
+                        ema50Series.setData(calculateEMA(formattedCandles, 50));
                     } else {
-                        emaSeries.setData([]);
+                        ema50Series.setData([]);
                     }
 
-                    chart.timeScale().fitContent();
+                    // رسم EMA 200
+                    if (showEMA200) {
+                        ema200Series.setData(calculateEMA(formattedCandles, 200));
+                    } else {
+                        ema200Series.setData([]);
+                    }
+
+                    // ضبط عرض العرض لتكبير الشموع (Zoom In)
+                    chart.timeScale().setVisibleLogicalRange({
+                        from: formattedCandles.length - 40, // إظهار أحدث 40 شمعة لتصبح الشموع عريضة وواضحة
+                        to: formattedCandles.length - 1
+                    });
                 }
             } catch (err) {
                 console.error("Chart Fetch Error:", err);
             }
         }
 
-        // 4. تغيير الفريمات الزمانية
+        // 5. التبديل بين الفريمات
         function changeTimeframe(tf) {
             currentTimeframe = tf;
             document.querySelectorAll('.tf-btn').forEach(btn => btn.classList.remove('active'));
@@ -302,15 +301,19 @@
             loadChartData();
         }
 
-        // 5. التبديل لمؤشر EMA
-        function toggleEMA() {
-            showEMA = !showEMA;
-            const btn = document.getElementById('emaToggle');
-            btn.classList.toggle('active', showEMA);
+        // 6. التحكم بـ EMA 50 & 200
+        function toggleEMA(period) {
+            if (period === 50) {
+                showEMA50 = !showEMA50;
+                document.getElementById('ema50Toggle').classList.toggle('active', showEMA50);
+            } else if (period === 200) {
+                showEMA200 = !showEMA200;
+                document.getElementById('ema200Toggle').classList.toggle('active', showEMA200);
+            }
             loadChartData();
         }
 
-        // 6. جلب السعر اللحظي مع تأثير التوهج الصاعد والهابط
+        // 7. جلب السعر اللحظي
         async function fetchBybitPrice() {
             const tickerUrl = 'https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSDT';
 
@@ -323,13 +326,8 @@
                     const formattedPrice = rawPrice.toFixed(2);
                     
                     if (lastPrice > 0) {
-                        if (rawPrice > lastPrice) {
-                            priceElement.style.color = '#00e676';
-                            priceElement.style.textShadow = '0 0 25px rgba(0, 230, 118, 0.4)';
-                        } else if (rawPrice < lastPrice) {
-                            priceElement.style.color = '#ff1744';
-                            priceElement.style.textShadow = '0 0 25px rgba(255, 23, 68, 0.4)';
-                        }
+                        if (rawPrice > lastPrice) priceElement.style.color = '#22c55e';
+                        else if (rawPrice < lastPrice) priceElement.style.color = '#ef4444';
                     }
                     lastPrice = rawPrice;
 
@@ -344,7 +342,7 @@
             }
         }
 
-        // إطلاق الاستدعاءات الدورية
+        // التشغيل التلقائي
         loadChartData();
         fetchBybitPrice();
         setInterval(fetchBybitPrice, 1000);
