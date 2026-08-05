@@ -252,8 +252,8 @@
         <div class="chart-container">
             <div id="chart"></div>
         </div>
-            </div>
-      <script>
+    </div>
+    <script>
         const priceElement = document.getElementById('price');
         const statusElement = document.getElementById('status');
         const signalTagElement = document.getElementById('signalTag');
@@ -358,7 +358,6 @@
         function analyzeMarket(candles, rawVolumeData) {
             if (candles.length < 200) return;
 
-            // استخدام السعر الحي المحدث إذا وجد، وإلا إغلاق آخر شمعة
             const activePrice = lastLivePrice > 0 ? lastLivePrice : candles[candles.length - 1].close;
 
             const ema20Data = calculateEMA(candles, 20);
@@ -392,11 +391,15 @@
             volNewsVal.innerText = `VOL: ${lastVol.toFixed(0)} (${hasGoodVolume ? 'STRONG 🟢' : 'WEAK/CHOPPY ⚠️'})`;
             volNewsVal.style.color = hasGoodVolume ? "#22c55e" : "#ef4444";
 
-            // حساب مناطق الدعم والمقاومة بدقة وربطها بالعنصر
             const recentSlice = candles.slice(-30);
-            const supportLevel = Math.min(...recentSlice.map(c => c.low));
-            const resistanceLevel = Math.max(...recentSlice.map(c => c.high));
+            let supportLevel = Math.min(...recentSlice.map(c => c.low));
+            let resistanceLevel = Math.max(...recentSlice.map(c => c.high));
             
+            if (lastLivePrice > 0) {
+                if (lastLivePrice < supportLevel) supportLevel = lastLivePrice;
+                if (lastLivePrice > resistanceLevel) resistanceLevel = lastLivePrice;
+            }
+
             srRetestVal.innerText = `S: $${supportLevel.toFixed(1)} | R: $${resistanceLevel.toFixed(1)}`;
             srRetestVal.style.color = "#3b82f6";
 
