@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold Engine - Smart Dual Buy & Sell System</title>
+    <title>Mika Pro Gold - Ultimate Accurate Engine</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,7 +39,6 @@
             letter-spacing: 1px; 
             margin: 4px 0; 
             line-height: 1; 
-            transition: color 0.3s ease;
         }
         .status-badge { font-size: 0.8rem; color: #3b82f6; margin-top: 4px; }
         
@@ -184,15 +183,15 @@
 <body>
 
     <div class="top-price-card">
-        <div class="header-title">🤖 Mika Pro Gold - Smart Dual Engine</div>
+        <div class="header-title">🤖 Mika Pro Gold - Ultimate Engine</div>
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● محرك البحث المزدوج عن الشراء والبيع نشط...</div>
+        <div id="status" class="status-badge">● محرك التحليل الاحترافي نشط...</div>
         
         <div class="signal-container">
             <span id="signalTag" class="signal-tag signal-wait">⚪ ANALYZING MARKET...</span>
-            <span class="signal-power">درجة الثقة: <strong id="signalPower" style="color: #fff;">0%</strong></span>
+            <span class="signal-power">نسبة الثقة المركبة: <strong id="signalPower" style="color: #fff;">0%</strong></span>
         </div>
 
         <div class="targets-box">
@@ -203,7 +202,7 @@
 
         <div class="trade-action-box">
             <button id="executeBtn" class="execute-btn" disabled onclick="executeOrder()">
-                ⏳ جاري تحليل السوق لاكتشاف فرصة شراء أو بيع...
+                ⏳ بانتظار إشارة فنية مؤكدة...
             </button>
         </div>
     </div>
@@ -305,19 +304,22 @@
         const ema50Series = chart.addLineSeries({ color: '#ffb703', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
         const ema200Series = chart.addLineSeries({ color: '#ec4899', lineWidth: 3, priceLineVisible: false, lastValueVisible: false });
 
+        // خوارزمية EMA مطابقة تماماً للمكتبة بدون فروقات سعرية
         function calculateEMA(candles, period) {
             if (candles.length < period) return [];
             let emaData = [];
             const k = 2 / (period + 1);
-            let prevEMA = candles[0].close;
             
-            for (let i = 0; i < candles.length; i++) {
+            let sum = 0;
+            for (let i = 0; i < period; i++) {
+                sum += candles[i].close;
+            }
+            let prevEMA = sum / period;
+            emaData.push({ time: candles[period - 1].time, value: prevEMA });
+            
+            for (let i = period; i < candles.length; i++) {
                 const close = candles[i].close;
-                if (i === 0) {
-                    prevEMA = close;
-                } else {
-                    prevEMA = (close * k) + (prevEMA * (1 - k));
-                }
+                prevEMA = (close * k) + (prevEMA * (1 - k));
                 emaData.push({ time: candles[i].time, value: prevEMA });
             }
             return emaData;
@@ -389,10 +391,10 @@
             const recentVols = rawVolumeData.slice(-20);
             const avgVol = recentVols.reduce((acc, curr) => acc + curr.value, 0) / 20;
             const lastVol = rawVolumeData[rawVolumeData.length - 1].value;
-            const hasGoodVolume = lastVol >= avgVol * 0.70;
+            const hasGoodVolume = lastVol >= avgVol * 0.75;
 
             volNewsVal.innerText = `VOL: ${lastVol.toFixed(0)} (${hasGoodVolume ? 'GOOD 🟢' : 'LOW ⚠️'})`;
-            volNewsVal.style.color = hasGoodVolume ? "#22c55e" : "#f59e0b";
+            volNewsVal.style.color = hasGoodVolume ? "#22c55e" : "#ef4444";
 
             const recentSlice = candles.slice(-30);
             const supportLevel = Math.min(...recentSlice.map(c => c.low));
@@ -403,32 +405,45 @@
             srRetestVal.innerText = nearSupport ? "NEAR SUPPORT 🟢" : (nearResistance ? "NEAR RESISTANCE 🔴" : "MID-RANGE ⚖️");
             srRetestVal.style.color = nearSupport ? "#22c55e" : (nearResistance ? "#ef4444" : "#94a3b8");
 
-            emaTrendVal.innerText = lastClose > lastEMA50 ? "BULLISH MOMENTUM 🟢" : "BEARISH MOMENTUM 🔴";
-            emaTrendVal.style.color = lastClose > lastEMA50 ? "#22c55e" : "#ef4444";
+            const isBullishTrend = lastClose > lastEMA50 && lastEMA50 > lastEMA200;
+            const isBearishTrend = lastClose < lastEMA50 && lastEMA50 < lastEMA200;
 
-            // ⚡ [منطق تقييم واكتشاف الفرصتين معاً بشكل احترافي]:
-            let signalText = "⚪ WAITING FOR CLEAR SETUP...";
+            emaTrendVal.innerText = isBullishTrend ? "BULLISH TREND 🟢" : (isBearishTrend ? "BEARISH TREND 🔴" : "SIDEWAYS ⚖️");
+            emaTrendVal.style.color = isBullishTrend ? "#22c55e" : (isBearishTrend ? "#ef4444" : "#94a3b8");
+
+            // 🎯 [معادلة الثقة المركبة والصارمة جداً]:
+            let signalText = "⚪ WAITING FOR STRONG SETUP...";
             let signalClass = "signal-wait";
-            let power = 50;
+            let realPower = 0;
             let sl = "---", tp1 = "---", tp2 = "---";
 
-            // شروط البيع الديناميكية (Sell Setup): متاح عند مناطق المقاومة أو التشبع الشرائي العالي
-            const isSellOpportunity = (rsiVal >= 60 || stochK >= 70 || nearResistance);
-            // شروط الشراء الديناميكية (Buy Setup): متاح عند مناطق الدعم أو التشبع البيعي
-            const isBuyOpportunity = (rsiVal <= 42 || stochK <= 30 || nearSupport);
+            const isSellOpportunity = (rsiVal >= 65 && stochK >= 70 && nearResistance);
+            const isBuyOpportunity = (rsiVal <= 35 && stochK <= 30 && nearSupport);
 
-            if (isSellOpportunity && !isBuyOpportunity) {
-                let sellScore = 72;
-                if (rsiVal >= 68) sellScore += 15;
-                if (nearResistance) sellScore += 10;
+            if (isSellOpportunity) {
+                // 1. قوة إشارات Overbought والتشبع
+                realPower = 60;
+                if (rsiVal >= 72) realPower += 15;
+                if (stochK >= 85) realPower += 10;
+
+                // 2. وزن سلبي لضعف الفوليوم
+                if (!hasGoodVolume) {
+                    realPower -= 30;
+                }
+
+                // 3. وزن سلبي لتعارض الترند العام (إذا كان الترند العام صاعد بشدة ونريد البيع)
+                if (isBullishTrend) {
+                    realPower -= 25;
+                }
+
+                realPower = Math.max(10, Math.min(realPower, 88));
 
                 signalText = "🔴 SELL SIGNAL (SHORT)";
                 signalClass = "signal-sell";
-                power = Math.min(sellScore, 98);
 
-                const slPrice = lastClose + 6.0;
-                const tp1Price = lastClose - 8.5;
-                const tp2Price = lastClose - 17.0;
+                const slPrice = lastClose + 6.5;
+                const tp1Price = lastClose - 9.0;
+                const tp2Price = lastClose - 18.0;
 
                 sl = slPrice.toFixed(2);
                 tp1 = tp1Price.toFixed(2);
@@ -438,20 +453,32 @@
                 
                 executeBtn.disabled = false;
                 executeBtn.className = "execute-btn sell-active";
-                executeBtn.innerText = `📉 تنفيذ صفقة بيع (SELL) عند $${lastClose.toFixed(2)}`;
+                executeBtn.innerText = `📉 تنفيذ صفقة بيع (SELL) مؤكدة عند $${lastClose.toFixed(2)}`;
 
-            } else if (isBuyOpportunity && !isSellOpportunity) {
-                let buyScore = 72;
-                if (rsiVal <= 35) buyScore += 15;
-                if (nearSupport) buyScore += 10;
+            } else if (isBuyOpportunity) {
+                // 1. قوة إشارات Oversold والتشبع
+                realPower = 60;
+                if (rsiVal <= 28) realPower += 15;
+                if (stochK <= 15) realPower += 10;
+
+                // 2. وزن سلبي لضعف الفوليوم
+                if (!hasGoodVolume) {
+                    realPower -= 30;
+                }
+
+                // 3. وزن سلبي لتعارض الترند العام (إذا كان الترند العام هابط ونريد الشراء)
+                if (isBearishTrend) {
+                    realPower -= 25;
+                }
+
+                realPower = Math.max(10, Math.min(realPower, 88));
 
                 signalText = "🟢 BUY SIGNAL (LONG)";
                 signalClass = "signal-buy";
-                power = Math.min(buyScore, 98);
 
-                const slPrice = lastClose - 6.0;
-                const tp1Price = lastClose + 8.5;
-                const tp2Price = lastClose + 17.0;
+                const slPrice = lastClose - 6.5;
+                const tp1Price = lastClose + 9.0;
+                const tp2Price = lastClose + 18.0;
 
                 sl = slPrice.toFixed(2);
                 tp1 = tp1Price.toFixed(2);
@@ -461,18 +488,18 @@
                 
                 executeBtn.disabled = false;
                 executeBtn.className = "execute-btn buy-active";
-                executeBtn.innerText = `📈 تنفيذ صفقة شراء (BUY) عند $${lastClose.toFixed(2)}`;
+                executeBtn.innerText = `📈 تنفيذ صفقة شراء (BUY) مؤكدة عند $${lastClose.toFixed(2)}`;
 
             } else {
                 currentTradeSetup = null;
                 executeBtn.disabled = true;
                 executeBtn.className = "execute-btn";
-                executeBtn.innerText = "⏳ السوق بين المستويات - بانتظار إشارة شراء أو بيع واضحة...";
+                executeBtn.innerText = "⏳ السوق غير مستقر - بانتظار إشارة فنية قوية...";
             }
 
             signalTagElement.innerText = signalText;
             signalTagElement.className = `signal-tag ${signalClass}`;
-            signalPowerElement.innerText = `${power}%`;
+            signalPowerElement.innerText = `${realPower}%`;
 
             slValElement.innerText = sl !== "---" ? `$${sl}` : "---";
             tp1ValElement.innerText = tp1 !== "---" ? `$${tp1}` : "---";
@@ -548,7 +575,7 @@
                     }
                     lastPrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-                    statusElement.innerText = "● محرك البحث المزدوج يعمل بانتظام";
+                    statusElement.innerText = "● محرك التحليل الاحترافي متزامن مع الشارت";
                 }
             } catch (err) {}
         }
