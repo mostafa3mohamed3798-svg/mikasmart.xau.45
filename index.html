@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold - Ultimate Accurate Engine V2</title>
+    <title>Mika Pro Gold - Absolute Sync Engine V3</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -165,7 +165,7 @@
         }
 
         .tf-btn.active { background: #f59e0b; color: #0b0f19; border-color: #f59e0b; }
-        .btn-ema.active { background: rgba(59, 130, 246, 0.2); color: #3b82f6; border-color: #3b82f6; }
+        .btn-ema.active { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border-color: #f59e0b; }
         .btn-vol.active { background: rgba(16, 185, 129, 0.2); color: #10b981; border-color: #10b981; }
 
         .chart-container { 
@@ -183,11 +183,11 @@
 <body>
 
     <div class="top-price-card">
-        <div class="header-title">🤖 Mika Pro Gold - Precision Engine V2</div>
+        <div class="header-title">🤖 Mika Pro Gold - Absolute Sync V3</div>
         <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● محرك التحليل الدقيق نشط...</div>
+        <div id="status" class="status-badge">● محرك التطابق البصري نشط...</div>
         
         <div class="signal-container">
             <span id="signalTag" class="signal-tag signal-wait">⚪ ANALYZING MARKET...</span>
@@ -300,17 +300,16 @@
             scaleMargins: { top: 0.8, bottom: 0 },
         });
 
-        const ema20Series = chart.addLineSeries({ color: '#3b82f6', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
-        const ema50Series = chart.addLineSeries({ color: '#ffb703', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+        // 🎨 [تصحيح جذري للألوان]: جعل EMA 20 باللون الأصفر المميز لتتطابق تماماً بصرياً وبرمجياً
+        const ema20Series = chart.addLineSeries({ color: '#f59e0b', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+        const ema50Series = chart.addLineSeries({ color: '#3b82f6', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
         const ema200Series = chart.addLineSeries({ color: '#ec4899', lineWidth: 3, priceLineVisible: false, lastValueVisible: false });
 
-        // خوارزمية EMA دقيقة ومطابقة تماماً لإحداثيات الشارت الحالية
         function calculateEMA(candles, period) {
             if (candles.length < period) return [];
             let emaData = [];
             const k = 2 / (period + 1);
             
-            // حساب أول قيمة باستخدام SMA دقيق للشمعة الأولى
             let sum = 0;
             for (let i = 0; i < period; i++) {
                 sum += candles[i].close;
@@ -370,7 +369,6 @@
             const ema50Data = calculateEMA(candles, 50);
             const ema200Data = calculateEMA(candles, 200);
 
-            // استخراج آخر قيمة بدقة تامة تتطابق مع الشمعة الأخيرة للشارت
             const lastEMA20 = ema20Data[ema20Data.length - 1].value;
             const lastEMA50 = ema50Data[ema50Data.length - 1].value;
             const lastEMA200 = ema200Data[ema200Data.length - 1].value;
@@ -378,8 +376,9 @@
             const distFromEMA20 = lastClose - lastEMA20;
             const pctDist = (distFromEMA20 / lastEMA20) * 100;
 
+            // تحديث العرض الرقمي ليتطابق مع القيمة الفعلية للخط الأصفر الجديد
             emaDistVal.innerText = `${distFromEMA20 > 0 ? '+' : ''}${distFromEMA20.toFixed(2)}$ (${pctDist.toFixed(2)}%)`;
-            emaDistVal.style.color = Math.abs(pctDist) <= 0.4 ? "#22c55e" : "#f59e0b";
+            emaDistVal.style.color = Math.abs(pctDist) <= 0.6 ? "#22c55e" : "#f59e0b";
 
             const rsiVal = calculateRSI(candles, 14);
             const stochK = calculateStochastic(candles, 14);
@@ -413,10 +412,9 @@
             emaTrendVal.innerText = isBullishTrend ? "BULLISH TREND 🟢" : (isBearishTrend ? "BEARISH TREND 🔴" : "SIDEWAYS ⚖️");
             emaTrendVal.style.color = isBullishTrend ? "#22c55e" : (isBearishTrend ? "#ef4444" : "#94a3b8");
 
-            // 🎯 [معادلة الثقة المتدرجة والمنطقية - تمنع قيم الصفر المتطرفة]:
             let signalText = "⚪ WAITING FOR STRONG SETUP...";
             let signalClass = "signal-wait";
-            let realPower = 35; // نقاط أساسية للتقارب الطبيعي للمؤشرات
+            let realPower = 35; 
             let sl = "---", tp1 = "---", tp2 = "---";
 
             const isSellOpportunity = (rsiVal >= 58 && stochK >= 60);
@@ -428,7 +426,6 @@
                 if (stochK >= 75) realPower += 10;
                 if (nearResistance) realPower += 10;
 
-                // خصم معتدل ومنطقي لضعف الفوليوم والترند بدل تدمير النسبة لـ 0%
                 if (!hasGoodVolume) realPower -= 15;
                 if (isBullishTrend) realPower -= 15;
 
@@ -457,7 +454,6 @@
                 if (stochK <= 25) realPower += 10;
                 if (nearSupport) realPower += 10;
 
-                // خصم معتدل ومنطقي
                 if (!hasGoodVolume) realPower -= 15;
                 if (isBearishTrend) realPower -= 15;
 
@@ -565,7 +561,7 @@
                     }
                     lastPrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-                    statusElement.innerText = "● محرك التحليل الدقيق متزامن مع الشارت تماماً";
+                    statusElement.innerText = "● مطابقة تامة بين الخط الأصفر وسعر الشارت";
                 }
             } catch (err) {}
         }
