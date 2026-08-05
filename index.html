@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Smart AI - Pro Dashboard</title>
+    <title>Mika Smart AI - Gold Dashboard</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
@@ -54,7 +54,6 @@
         .signal-tag { background-color: rgba(34, 197, 94, 0.15); color: #22c55e; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 0.95rem; }
         .signal-power { color: #94a3b8; font-size: 0.9rem; }
 
-        /* حاوية الشارت الاحترافي */
         .chart-container { 
             background: #151c2c; 
             border-radius: 16px; 
@@ -62,11 +61,7 @@
             width: 100%; 
             max-width: 500px; 
             border: 1px solid #232d42; 
-            height: 480px; 
-        }
-        .tradingview-widget-container {
-            width: 100%;
-            height: 100%;
+            height: 460px; 
         }
     </style>
 </head>
@@ -85,26 +80,24 @@
         </div>
     </div>
 
-    <!-- شارت TradingView الاحترافي الأصلي المباشر -->
+    <!-- ويدجت الشارت المضمن المستقل -->
     <div class="chart-container">
-        <div class="tradingview-widget-container">
-            <div id="tradingview_pro_chart" style="height:100%;width:100%;"></div>
-            <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-            <script type="text/javascript">
-                new TradingView.widget({
-                    "autosize": true,
-                    "symbol": "BYBIT:XAUUSDT",
-                    "interval": "15",
-                    "timezone": "Etc/UTC",
-                    "theme": "dark",
-                    "style": "1",
-                    "locale": "ar",
-                    "toolbar_bg": "#151c2c",
-                    "enable_publishing": false,
-                    "allow_symbol_change": false,
-                    "container_id": "tradingview_pro_chart"
-                });
-            </script>
+        <div class="tradingview-widget-container" style="height:100%;width:100%;">
+          <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%;"></div>
+          <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+          {
+          "autosize": true,
+          "symbol": "BYBIT:XAUUSDT",
+          "interval": "15",
+          "timezone": "Etc/UTC",
+          "theme": "dark",
+          "style": "1",
+          "locale": "ar",
+          "allow_symbol_change": false,
+          "calendar": false,
+          "support_host": "https://www.tradingview.com"
+        }
+          </script>
         </div>
     </div>
 
@@ -131,7 +124,7 @@
                     lastPrice = rawPrice;
 
                     priceElement.innerText = `$${formattedPrice}`;
-                    statusElement.innerText = "● اتصال حي ومباشر (Bybit API)";
+                    statusElement.innerText = "● اتصال مباشر بالسعر (Bybit API)";
                     statusElement.style.color = "#10b981";
                 }
             } catch (err) {
