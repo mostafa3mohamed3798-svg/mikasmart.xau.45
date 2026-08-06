@@ -39,8 +39,6 @@ const TF_CONFIG = {
     '15m': { seconds: 900 },
 };
 
-// goldprice.org - سعر سبوت حقيقي للذهب (XAU/USD)، نفس المصدر اللي
-// TradingView وBybit (قسم CFD/الأصول التقليدية) بيتطابقوا معاه تقريبًا
 const GOLD_SPOT_URL = 'https://data-asg.goldprice.org/dbXRates/USD';
 
 function getTfSeconds() {
@@ -63,7 +61,7 @@ const ema200Series = chart.addLineSeries({ color: '#ec4899', lineWidth: 2.5, pri
 const vwapSeries = chart.addLineSeries({ color: '#a855f7', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
 
 function calculateEMA(candles, period) {
-    if (candles.length < period) return [];
+    if (!candles || candles.length < period) return [];
     let emaData = [];
     const k = 2 / (period + 1);
     let sum = 0;
@@ -80,7 +78,7 @@ function calculateEMA(candles, period) {
 }
 
 function calculateVWAP(candles, volumes) {
-    if (candles.length === 0 || volumes.length === 0) return [];
+    if (!candles || candles.length === 0 || !volumes || volumes.length === 0) return [];
     let vwapData = [];
     let cumulativeTPV = 0;
     let cumulativeVolume = 0;
@@ -97,9 +95,6 @@ function calculateVWAP(candles, volumes) {
     return vwapData;
 }
 
-// -------------------------------------------------------------------------
-// تحليل الشمعة الحالية + التعامل مع فتح شمعة جديدة عند بداية فريم جديد
-// -------------------------------------------------------------------------
 function updateCurrentCandle(activePrice) {
     const tfSeconds = getTfSeconds();
     const now = Math.floor(Date.now() / 1000);
@@ -108,7 +103,6 @@ function updateCurrentCandle(activePrice) {
     let currentCandle = globalCandles[globalCandles.length - 1];
 
     if (!currentCandle || currentCandle.time !== periodStart) {
-        // فريم زمني جديد بدأ -> اقفل الشمعة القديمة وافتح شمعة جديدة حقيقية
         currentCandle = {
             time: periodStart,
             open: activePrice,
@@ -119,13 +113,11 @@ function updateCurrentCandle(activePrice) {
         globalCandles.push(currentCandle);
         globalVolumes.push({ time: periodStart, value: 0 });
 
-        // حافظ على حجم معقول للتاريخ المعروض
         if (globalCandles.length > 500) {
             globalCandles.shift();
             globalVolumes.shift();
         }
 
-        // شمعة جديدة = لازم نعيد فتح قفل الإشارة
         lockedSignalType = null;
     } else {
         if (activePrice > currentCandle.high) currentCandle.high = activePrice;
@@ -171,7 +163,7 @@ function analyzeCurrentCandle(activePrice) {
 }
 
 function analyzeMarket() {
-    if (globalCandles.length < 50 || lastLivePrice === 0) return;
+    if (globalCandles.length < 2 || lastLivePrice === 0) return;
 
     const activePrice = lastLivePrice;
     const candleInfo = analyzeCurrentCandle(activePrice);
@@ -277,11 +269,6 @@ function executeOrder() {
     alert(`✅ تنفيذ صفقة الذهب:\nالنوع: ${currentTradeSetup.type}\nالدخول: $${currentTradeSetup.entry}\nالهدف الأول: $${currentTradeSetup.tp1}\nالهدف الثاني: $${currentTradeSetup.tp2}\nوقف الخسارة: $${currentTradeSetup.sl}`);
 }
 
-// -------------------------------------------------------------------------
-// عند تغيير الفريم الزمني: نبني الشموع من جديد بنفس الأسعار الفعلية
-// المُسجّلة (تجميع الشموع القديمة لفريم أكبر)، أو نبدأ شمعة واحدة بالسعر
-// الحالي لو مفيش تاريخ كفاية بعد.
-// -------------------------------------------------------------------------
 function loadChartData() {
     lockedSignalType = null;
     lockedCandleTime = null;
@@ -304,10 +291,6 @@ function loadChartData() {
     }
 }
 
-// -------------------------------------------------------------------------
-// سعر سبوت حقيقي للذهب (XAU/USD) من goldprice.org - نفس السعر اللي بيتطابق
-// مع TradingView وBybit CFD تقريبًا (مصدر سبوت عالمي، لا فروقات عقود مشتقة)
-// -------------------------------------------------------------------------
 async function fetchLiveGoldPrice() {
     if (isFetchingPrice) return;
     isFetchingPrice = true;
@@ -341,7 +324,6 @@ async function fetchLiveGoldPrice() {
             analyzeMarket();
         }
     } catch (err) {
-        // نعرض الخطأ الحقيقي جوه الصفحة نفسها (مفيش حاجة تانية غيّرت السعر)
         macdFilterVal.innerHTML = `<span dir="ltr" style="color:#ef4444">✗ ${err.message}</span>`;
         console.error('خطأ في جلب سعر السبوت اللحظي:', err);
     } finally {
@@ -349,16 +331,12 @@ async function fetchLiveGoldPrice() {
     }
 }
 
-// -------------------------------------------------------------------------
-// أدوات التحكم بالواجهة
-// -------------------------------------------------------------------------
 function changeTimeframe(tf, evt) {
     currentTimeframe = tf;
     lockedSignalType = null;
 
     document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
 
-    // دعم استدعاء بدون تمرير event صريح (توافق مع onclick القديم)
     const e = evt || window.event;
     if (e && e.target) e.target.classList.add('active');
 
@@ -377,19 +355,12 @@ function toggleVWAP() {
     if (globalCandles.length > 0) analyzeMarket();
 }
 
-// -------------------------------------------------------------------------
-// التشغيل: تحميل تاريخي أولي مرة واحدة، وسعر لحظي كل 3 ثواني
-// -------------------------------------------------------------------------
 loadChartData();
 fetchLiveGoldPrice();
 setInterval(fetchLiveGoldPrice, 3000);
 
-// المتصفح (خصوصًا على الموبايل) بيوقف تنفيذ الجافاسكريبت لما التبويبة
-// تروح في الخلفية (تفتح تطبيق تاني/تقفل الشاشة)، فالسعر بيتجمد على آخر
-// قيمة. السطر ده بيجيب سعر فوري لحظة ما ترجع للصفحة تاني بدل ما تستنى.
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
         fetchLiveGoldPrice();
     }
 });
-
