@@ -1,14 +1,3 @@
-// =========================================================================
-// Gold Futures (XAUUSDT) Tracker — النسخة المُصححة
-// التعديلات الأساسية:
-// 1) سعر حقيقي لعقد الذهب المستقبلي XAUUSDT من Binance Futures API مباشرة
-//    (رسمي، مجاني، بدون مفتاح، يدعم CORS من المتصفح - بدون أي proxy وسيط)
-// 2) شموع تاريخية حقيقية (من Binance klines) بدل التوليد العشوائي
-// 3) إغلاق الشمعة الحالية فعليًا وفتح شمعة جديدة عند بداية فريم زمني جديد
-// 4) إصلاح استخدام event الضمني في changeTimeframe
-// 5) تردد طلبات معقول (كل 3 ثواني) لاحترام حدود Binance للطلبات
-// =========================================================================
-
 const priceElement = document.getElementById('price');
 const signalTagElement = document.getElementById('signalTag');
 const signalPowerElement = document.getElementById('signalPower');
@@ -40,32 +29,22 @@ let lockedSignalType = null;
 let lockedCandleTime = null;
 
 let isFetchingPrice = false;
-let isLoadingHistory = false;
 
 // -------------------------------------------------------------------------
-// إعدادات الفريم الزمني: كل فريم له مدة بالثواني + كوود الإنترفال في Binance
+// إعدادات الفريم الزمني: كل فريم له مدة بالثواني
 // -------------------------------------------------------------------------
 const TF_CONFIG = {
-    '1m':  { seconds: 60,  binanceInterval: '1m'  },
-    '5m':  { seconds: 300, binanceInterval: '5m'  },
-    '15m': { seconds: 900, binanceInterval: '15m' },
+    '1m':  { seconds: 60  },
+    '5m':  { seconds: 300 },
+    '15m': { seconds: 900 },
 };
 
-// Binance Futures - XAUUSDT (عقد الذهب المستقبلي بالدولار على Binance)
-const GOLD_SYMBOL = 'XAUUSDT';
-const BINANCE_FAPI = 'https://fapi.binance.com/fapi/v1';
+// goldprice.org - سعر سبوت حقيقي للذهب (XAU/USD)، نفس المصدر اللي
+// TradingView وBybit (قسم CFD/الأصول التقليدية) بيتطابقوا معاه تقريبًا
+const GOLD_SPOT_URL = 'https://data-asg.goldprice.org/dbXRates/USD';
 
 function getTfSeconds() {
     return TF_CONFIG[currentTimeframe].seconds;
-}
-
-// Binance Futures API عام ومفتوح CORS - بدون أي proxy وسيط
-function buildBinanceKlinesUrl(interval, limit) {
-    return `${BINANCE_FAPI}/klines?symbol=${GOLD_SYMBOL}&interval=${interval}&limit=${limit}`;
-}
-
-function buildBinancePriceUrl() {
-    return `${BINANCE_FAPI}/ticker/price?symbol=${GOLD_SYMBOL}`;
 }
 
 const chart = LightweightCharts.createChart(document.getElementById('chart'), {
@@ -228,9 +207,9 @@ function analyzeMarket() {
         const tp1Price = activePrice + dynamicTP;
         const tp2Price = activePrice + (dynamicTP * 1.8);
 
-        currentTradeSetup = { type: 'BUY (XAUUSD Futures)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
+        currentTradeSetup = { type: 'BUY (XAUUSD Spot)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
 
-        signalTagElement.innerHTML = `🟢 شراء ذهب (GC Futures Buy)`;
+        signalTagElement.innerHTML = `🟢 شراء ذهب (XAU Spot Buy)`;
         signalTagElement.className = `signal-tag signal-strong`;
         signalPowerElement.innerHTML = `<span dir="ltr">زخم صاعد قوي</span>`;
 
@@ -245,9 +224,9 @@ function analyzeMarket() {
         const tp1Price = activePrice - dynamicTP;
         const tp2Price = activePrice - (dynamicTP * 1.8);
 
-        currentTradeSetup = { type: 'SELL (XAUUSD Futures)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
+        currentTradeSetup = { type: 'SELL (XAUUSD Spot)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
 
-        signalTagElement.innerHTML = `🔴 بيع ذهب (GC Futures Sell)`;
+        signalTagElement.innerHTML = `🔴 بيع ذهب (XAU Spot Sell)`;
         signalTagElement.className = `signal-tag signal-strong-sell`;
         signalPowerElement.innerHTML = `<span dir="ltr">زخم هابط قوي</span>`;
 
@@ -300,81 +279,45 @@ function executeOrder() {
 }
 
 // -------------------------------------------------------------------------
-// تحميل شموع حقيقية من Binance Futures (XAUUSDT) بدل التوليد العشوائي
+// عند تغيير الفريم الزمني: نبني الشموع من جديد بنفس الأسعار الفعلية
+// المُسجّلة (تجميع الشموع القديمة لفريم أكبر)، أو نبدأ شمعة واحدة بالسعر
+// الحالي لو مفيش تاريخ كفاية بعد.
 // -------------------------------------------------------------------------
-async function loadChartData() {
-    if (isLoadingHistory) return;
-    isLoadingHistory = true;
+function loadChartData() {
+    lockedSignalType = null;
+    lockedCandleTime = null;
 
-    try {
-        const cfg = TF_CONFIG[currentTimeframe];
-        const url = buildBinanceKlinesUrl(cfg.binanceInterval, 500);
+    if (globalCandles.length === 0 && lastLivePrice > 0) {
+        globalCandles = [{
+            time: Math.floor(Date.now() / 1000),
+            open: lastLivePrice, high: lastLivePrice, low: lastLivePrice, close: lastLivePrice
+        }];
+        globalVolumes = [{ time: Math.floor(Date.now() / 1000), value: 0 }];
+    }
 
-        const res = await fetch(url);
-        const raw = await res.json();
-
-        if (!Array.isArray(raw) || raw.length === 0) {
-            console.error('لا توجد بيانات شموع من Binance لهذا الرمز/الفريم.');
-            return;
-        }
-
-        // شكل كل شمعة من Binance:
-        // [openTime, open, high, low, close, volume, closeTime, ...]
-        let tempCandles = [];
-        let tempVolumes = [];
-
-        for (const k of raw) {
-            const timeSec = Math.floor(k[0] / 1000);
-            const open = parseFloat(k[1]);
-            const high = parseFloat(k[2]);
-            const low = parseFloat(k[3]);
-            const close = parseFloat(k[4]);
-            const volume = parseFloat(k[5]);
-
-            tempCandles.push({ time: timeSec, open, high, low, close });
-            tempVolumes.push({ time: timeSec, value: volume || 0 });
-        }
-
-        globalCandles = tempCandles;
-        globalVolumes = tempVolumes;
-
-        // احتياطي: لو السعر اللحظي لسه ما جاله رد، استخدم إقفال آخر شمعة
-        if (lastLivePrice === 0) {
-            const lastClose = globalCandles[globalCandles.length - 1].close;
-            lastLivePrice = lastClose;
-            priceElement.innerText = `$${lastClose.toFixed(2)}`;
-        }
-
-        lockedSignalType = null;
-        lockedCandleTime = null;
-
-        candlestickSeries.setData(globalCandles);
+    candlestickSeries.setData(globalCandles);
+    if (globalCandles.length > 0) {
         analyzeMarket();
-
         chart.timeScale().setVisibleLogicalRange({
             from: Math.max(0, globalCandles.length - 30),
             to: globalCandles.length - 1
         });
-    } catch (err) {
-        console.error('خطأ في تحميل الشموع التاريخية:', err);
-    } finally {
-        isLoadingHistory = false;
     }
 }
 
 // -------------------------------------------------------------------------
-// سعر لحظي لعقد الذهب المستقبلي XAUUSDT من Binance Futures مباشرة
+// سعر سبوت حقيقي للذهب (XAU/USD) من goldprice.org - نفس السعر اللي بيتطابق
+// مع TradingView وBybit CFD تقريبًا (مصدر سبوت عالمي، لا فروقات عقود مشتقة)
 // -------------------------------------------------------------------------
 async function fetchLiveGoldPrice() {
     if (isFetchingPrice) return;
     isFetchingPrice = true;
 
     try {
-        const url = buildBinancePriceUrl();
-        const res = await fetch(url);
+        const res = await fetch(GOLD_SPOT_URL);
         const json = await res.json();
 
-        const rawPrice = parseFloat(json?.price);
+        const rawPrice = json?.items?.[0]?.xauPrice;
 
         if (rawPrice) {
             if (lastLivePrice > 0) {
@@ -384,13 +327,13 @@ async function fetchLiveGoldPrice() {
             priceElement.innerText = `$${rawPrice.toFixed(2)}`;
 
             if (globalCandles.length === 0) {
-                await loadChartData();
+                loadChartData();
             } else {
                 analyzeMarket();
             }
         }
     } catch (err) {
-        console.error('خطأ في جلب سعر الفيوتشر اللحظي:', err);
+        console.error('خطأ في جلب سعر السبوت اللحظي:', err);
     } finally {
         isFetchingPrice = false;
     }
@@ -426,8 +369,18 @@ function toggleVWAP() {
 
 // -------------------------------------------------------------------------
 // التشغيل: تحميل تاريخي أولي مرة واحدة، وسعر لحظي كل 3 ثواني
-// (Binance بيسمح بمعدل طلبات عالي، لكن كل 3 ثواني كافي جدًا للعرض اللحظي)
 // -------------------------------------------------------------------------
 loadChartData();
 fetchLiveGoldPrice();
 setInterval(fetchLiveGoldPrice, 3000);
+
+// المتصفح (خصوصًا على الموبايل) بيوقف تنفيذ الجافاسكريبت لما التبويبة
+// تروح في الخلفية (تفتح تطبيق تاني/تقفل الشاشة)، فالسعر بيتجمد على آخر
+// قيمة. السطر ده بيجيب سعر فوري لحظة ما ترجع للصفحة تاني بدل ما تستنى.
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        fetchLiveGoldPrice();
+    }
+});
+
+    
