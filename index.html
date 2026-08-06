@@ -174,8 +174,8 @@
         <div class="header-title">🛡️ Mika Dynamic Scalper - محرك الزخم المرن</div>
         <div class="symbol-name">Bybit CFD - XAUUSD</div>
         
-        <div id="price" class="price-display">جاري الاتصال بالسيرفر...</div>
-        <div id="status" class="status-badge">● بانتظار استجابة البيانات</div>
+        <div id="price" class="price-display">جاري جلب السعر...</div>
+        <div id="status" class="status-badge">● جاري الاتصال بالمنصة</div>
         
         <div class="signal-container">
             <span id="signalTag" class="signal-tag signal-wait">⏳ بانتظار استقرار الزخم...</span>
@@ -469,8 +469,12 @@
 
         async function loadChartData() {
             try {
-                const res = await fetch(`https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSD&interval=${currentTimeframe}&limit=150`);
-                const data = await res.json();
+                const targetUrl = `https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSD&interval=${currentTimeframe}&limit=150`;
+                const proxyUrl = `https://api.allorigins.win/get?url=` + encodeURIComponent(targetUrl);
+                
+                const res = await fetch(proxyUrl);
+                const wrapper = await res.json();
+                const data = JSON.parse(wrapper.contents);
 
                 if (data && data.retCode === 0 && data.result && data.result.list) {
                     const list = data.result.list.reverse();
@@ -502,8 +506,12 @@
 
         async function fetchBybitPrice() {
             try {
-                const res = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSD');
-                const data = await res.json();
+                const targetUrl = 'https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSD';
+                const proxyUrl = `https://api.allorigins.win/get?url=` + encodeURIComponent(targetUrl);
+
+                const res = await fetch(proxyUrl);
+                const wrapper = await res.json();
+                const data = JSON.parse(wrapper.contents);
                 
                 if (data && data.retCode === 0 && data.result && data.result.list.length > 0) {
                     const rawPrice = parseFloat(data.result.list[0].lastPrice);
@@ -512,7 +520,7 @@
                     }
                     lastLivePrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-                    statusElement.innerText = "● متصل ويحدث لحظياً (400ms)";
+                    statusElement.innerText = "● متصل بـ Bybit CFD بنجاح";
                     statusElement.style.color = "#22c55e";
 
                     if (globalCandles.length > 0) {
@@ -520,8 +528,8 @@
                     }
                 }
             } catch (err) {
-                priceElement.innerText = "فشل الاتصال";
-                statusElement.innerText = "● تأكد من تشغيل سيرفر محلي (Live Server)";
+                priceElement.innerText = "تعذر الاتصال";
+                statusElement.innerText = "● تحقق من اتصال الإنترنت";
                 statusElement.style.color = "#ef4444";
             }
         }
@@ -549,8 +557,8 @@
         loadChartData();
         fetchBybitPrice();
         
-        setInterval(fetchBybitPrice, 400); 
-        setInterval(loadChartData, 10000);  
+        setInterval(fetchBybitPrice, 3000); 
+        setInterval(loadChartData, 15000);  
     </script>
 </body>
 </html>
