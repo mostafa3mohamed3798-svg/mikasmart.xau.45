@@ -68,3 +68,25 @@ function calculateSupportResistance(candles, lookback = 20) {
     
     return { support, resistance };
 }
+// دالة لتحديث الواجهة بناءً على القيم الحسابية
+function applyIndicatorsToUI(candles) {
+    if (!candles || candles.length < 20) return;
+
+    let closes = candles.map(c => Number(c.close));
+    let rsiValue = calculateRSI(closes, 14);
+    let atrValue = calculateATR(candles, 14);
+    let sr = calculateSupportResistance(candles, 20);
+
+    // تحديث جملة "بانتظار استقرار الزخم" في الصفحة
+    document.querySelectorAll("div").forEach(el => {
+        if (el.innerText.includes("بانتظار استقرار الزخم")) {
+            if (rsiValue > 70) {
+                el.innerText = `تشبع شراء (RSI: ${rsiValue.toFixed(1)})`;
+            } else if (rsiValue < 30) {
+                el.innerText = `تشبع بيع (RSI: ${rsiValue.toFixed(1)})`;
+            } else {
+                el.innerText = `الزخم ضمن النطاق الآمن (RSI: ${rsiValue.toFixed(1)})`;
+            }
+        }
+    });
+}
