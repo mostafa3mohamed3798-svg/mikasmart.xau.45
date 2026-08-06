@@ -1,3 +1,14 @@
+// =========================================================================
+// Gold Futures (GC=F) Tracker — النسخة المُصححة
+// التعديلات الأساسية:
+// 1) سعر حقيقي لعقود الذهب المستقبلية (GC=F) من Yahoo Finance عبر CORS proxy
+//    بدل سعر السبوت من goldprice.org
+// 2) شموع تاريخية حقيقية (من Yahoo) بدل التوليد العشوائي
+// 3) إغلاق الشمعة الحالية فعليًا وفتح شمعة جديدة عند بداية فريم زمني جديد
+// 4) إصلاح استخدام event الضمني في changeTimeframe
+// 5) تقليل تردد الطلبات لتفادي حظر الـ proxy
+// =========================================================================
+
 const priceElement = document.getElementById('price');
 const signalTagElement = document.getElementById('signalTag');
 const signalPowerElement = document.getElementById('signalPower');
@@ -25,8 +36,33 @@ let currentTradeSetup = null;
 let globalCandles = [];
 let globalVolumes = [];
 
-let lockedSignalType = null; 
+let lockedSignalType = null;
 let lockedCandleTime = null;
+
+let isFetchingPrice = false;
+let isLoadingHistory = false;
+
+// -------------------------------------------------------------------------
+// إعدادات الفريم الزمني: كل فريم له مدة بالثواني، ورينج/إنترفال يوهو المناسب
+// -------------------------------------------------------------------------
+const TF_CONFIG = {
+    '1m':  { seconds: 60,  yahooInterval: '1m',  yahooRange: '1d'  },
+    '5m':  { seconds: 300, yahooInterval: '5m',  yahooRange: '5d'  },
+    '15m': { seconds: 900, yahooInterval: '15m', yahooRange: '1mo' },
+};
+
+const GOLD_SYMBOL = 'GC=F'; // عقد الذهب المستقبلي (COMEX)
+
+function getTfSeconds() {
+    return TF_CONFIG[currentTimeframe].seconds;
+}
+
+// يبني رابط يوهو فايننس ويمرره عبر CORS proxy مجاني (allorigins)
+// ⚠️ للاستخدام الجدي/الإنتاجي: استبدل ده بسيرفر خلفي بسيط تتحكم فيه بنفسك
+function buildYahooProxyUrl(interval, range) {
+    const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(GOLD_SYMBOL)}?interval=${interval}&range=${range}`;
+    return `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`;
+}
 
 const chart = LightweightCharts.createChart(document.getElementById('chart'), {
     layout: { backgroundColor: '#020408', textColor: '#94a3b8' },
@@ -51,7 +87,7 @@ function calculateEMA(candles, period) {
     for (let i = 0; i < period; i++) sum += candles[i].close;
     let prevEMA = sum / period;
     emaData.push({ time: candles[period - 1].time, value: prevEMA });
-    
+
     for (let i = period; i < candles.length; i++) {
         const close = candles[i].close;
         prevEMA = (close * k) + (prevEMA * (1 - k));
@@ -71,45 +107,79 @@ function calculateVWAP(candles, volumes) {
         const vol = volumes[i] ? volumes[i].value : 0;
         cumulativeTPV += typicalPrice * vol;
         cumulativeVolume += vol;
-        
+
         const vwapVal = cumulativeVolume > 0 ? cumulativeTPV / cumulativeVolume : typicalPrice;
         vwapData.push({ time: candles[i].time, value: vwapVal });
     }
     return vwapData;
 }
 
-function analyzeCurrentCandle(candles, activePrice) {
-    if (candles.length === 0) return { bullPct: 50, bearPct: 50 };
-    
-    let currentCandle = candles[candles.length - 1];
-    
-    if (activePrice > currentCandle.high) currentCandle.high = activePrice;
-    if (activePrice < currentCandle.low) currentCandle.low = activePrice;
-    currentCandle.close = activePrice;
+// -------------------------------------------------------------------------
+// تحليل الشمعة الحالية + التعامل مع فتح شمعة جديدة عند بداية فريم جديد
+// -------------------------------------------------------------------------
+function updateCurrentCandle(activePrice) {
+    const tfSeconds = getTfSeconds();
+    const now = Math.floor(Date.now() / 1000);
+    const periodStart = Math.floor(now / tfSeconds) * tfSeconds;
+
+    let currentCandle = globalCandles[globalCandles.length - 1];
+
+    if (!currentCandle || currentCandle.time !== periodStart) {
+        // فريم زمني جديد بدأ -> اقفل الشمعة القديمة وافتح شمعة جديدة حقيقية
+        currentCandle = {
+            time: periodStart,
+            open: activePrice,
+            high: activePrice,
+            low: activePrice,
+            close: activePrice,
+        };
+        globalCandles.push(currentCandle);
+        globalVolumes.push({ time: periodStart, value: 0 });
+
+        // حافظ على حجم معقول للتاريخ المعروض
+        if (globalCandles.length > 500) {
+            globalCandles.shift();
+            globalVolumes.shift();
+        }
+
+        // شمعة جديدة = لازم نعيد فتح قفل الإشارة
+        lockedSignalType = null;
+    } else {
+        if (activePrice > currentCandle.high) currentCandle.high = activePrice;
+        if (activePrice < currentCandle.low) currentCandle.low = activePrice;
+        currentCandle.close = activePrice;
+    }
+
+    return currentCandle;
+}
+
+function analyzeCurrentCandle(activePrice) {
+    const currentCandle = updateCurrentCandle(activePrice);
 
     const high = currentCandle.high;
     const low = currentCandle.low;
     const totalRange = high - low;
-    
-    if (totalRange <= 0) return { bullPct: 50, bearPct: 50, candleTime: currentCandle.time };
 
-    const distanceFromLow = activePrice - low;
-    let bullPct = (distanceFromLow / totalRange) * 100;
-    bullPct = Math.max(0, Math.min(100, bullPct));
-    let bearPct = 100 - bullPct;
+    let bullPct = 50;
+    let bearPct = 50;
+
+    if (totalRange > 0) {
+        const distanceFromLow = activePrice - low;
+        bullPct = (distanceFromLow / totalRange) * 100;
+        bullPct = Math.max(0, Math.min(100, bullPct));
+        bearPct = 100 - bullPct;
+    }
 
     bullishPercentText.innerText = `صعود: ${bullPct.toFixed(1)}%`;
     bearishPercentText.innerText = `هبوط: ${bearPct.toFixed(1)}%`;
     bullishBar.style.width = `${bullPct}%`;
     bearishBar.style.width = `${bearPct}%`;
 
-    const tfNum = parseInt(currentTimeframe) || 1;
-    const tfMinutes = currentTimeframe.includes('m') ? tfNum : (currentTimeframe.includes('h') ? tfNum * 60 : 1);
+    const tfSeconds = getTfSeconds();
     const now = Math.floor(Date.now() / 1000);
     const elapsedSeconds = now - currentCandle.time;
-    const totalSeconds = tfMinutes * 60;
-    const remainingSeconds = Math.max(0, totalSeconds - elapsedSeconds);
-    
+    const remainingSeconds = Math.max(0, tfSeconds - elapsedSeconds);
+
     const remMin = Math.floor(remainingSeconds / 60);
     const remSec = remainingSeconds % 60;
     candleTimer.innerText = `إغلاق: ${remMin}:${remSec < 10 ? '0' : ''}${remSec}`;
@@ -121,7 +191,7 @@ function analyzeMarket() {
     if (globalCandles.length < 50 || lastLivePrice === 0) return;
 
     const activePrice = lastLivePrice;
-    const candleInfo = analyzeCurrentCandle(globalCandles, activePrice);
+    const candleInfo = analyzeCurrentCandle(activePrice);
 
     const ema50Data = calculateEMA(globalCandles, 50);
     const ema200Data = calculateEMA(globalCandles, 200);
@@ -146,17 +216,17 @@ function analyzeMarket() {
     }
 
     const currentCandleRange = globalCandles[globalCandles.length - 1].high - globalCandles[globalCandles.length - 1].low;
-    const dynamicTP = Math.max(2.5, currentCandleRange * 0.45); 
-    const dynamicSL = Math.max(2.0, currentCandleRange * 0.5);  
+    const dynamicTP = Math.max(2.5, currentCandleRange * 0.45);
+    const dynamicSL = Math.max(2.0, currentCandleRange * 0.5);
 
     if (signalType === 'BUY') {
         const slPrice = activePrice - dynamicSL;
         const tp1Price = activePrice + dynamicTP;
         const tp2Price = activePrice + (dynamicTP * 1.8);
 
-        currentTradeSetup = { type: 'BUY (Gold Spot)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
-        
-        signalTagElement.innerHTML = `🟢 شراء ذهب (Spot Buy)`;
+        currentTradeSetup = { type: 'BUY (XAUUSD Futures)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
+
+        signalTagElement.innerHTML = `🟢 شراء ذهب (GC Futures Buy)`;
         signalTagElement.className = `signal-tag signal-strong`;
         signalPowerElement.innerHTML = `<span dir="ltr">زخم صاعد قوي</span>`;
 
@@ -171,9 +241,9 @@ function analyzeMarket() {
         const tp1Price = activePrice - dynamicTP;
         const tp2Price = activePrice - (dynamicTP * 1.8);
 
-        currentTradeSetup = { type: 'SELL (Gold Spot)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
-        
-        signalTagElement.innerHTML = `🔴 بيع ذهب (Spot Sell)`;
+        currentTradeSetup = { type: 'SELL (XAUUSD Futures)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
+
+        signalTagElement.innerHTML = `🔴 بيع ذهب (GC Futures Sell)`;
         signalTagElement.className = `signal-tag signal-strong-sell`;
         signalPowerElement.innerHTML = `<span dir="ltr">زخم هابط قوي</span>`;
 
@@ -225,54 +295,91 @@ function executeOrder() {
     alert(`✅ تنفيذ صفقة الذهب:\nالنوع: ${currentTradeSetup.type}\nالدخول: $${currentTradeSetup.entry}\nالهدف الأول: $${currentTradeSetup.tp1}\nالهدف الثاني: $${currentTradeSetup.tp2}\nوقف الخسارة: $${currentTradeSetup.sl}`);
 }
 
+// -------------------------------------------------------------------------
+// تحميل شموع حقيقية من Yahoo Finance (GC=F) بدل التوليد العشوائي
+// -------------------------------------------------------------------------
 async function loadChartData() {
+    if (isLoadingHistory) return;
+    isLoadingHistory = true;
+
     try {
-        // توليد بيانات الشموع التاريخية بناءً على السعر الحقيقي الحالي للذهب لضمان التوافق التام
-        if (lastLivePrice === 0) return;
-        
-        let basePrice = lastLivePrice;
+        const cfg = TF_CONFIG[currentTimeframe];
+        const url = buildYahooProxyUrl(cfg.yahooInterval, cfg.yahooRange);
+
+        const res = await fetch(url);
+        const json = await res.json();
+
+        const result = json?.chart?.result?.[0];
+        if (!result || !result.timestamp) {
+            console.error('لا توجد بيانات شموع من Yahoo لهذا الرمز/الفريم.');
+            return;
+        }
+
+        const timestamps = result.timestamp;
+        const quote = result.indicators.quote[0];
+
         let tempCandles = [];
         let tempVolumes = [];
-        const now = Math.floor(Date.now() / 1000);
-        const tfSeconds = 60; // 1m
 
-        for (let i = 150; i >= 0; i--) {
-            const time = now - (i * tfSeconds);
-            const randomChange = (Math.random() - 0.49) * 3.5;
-            basePrice += randomChange;
-            const open = basePrice;
-            const high = open + Math.random() * 2.0;
-            const low = open - Math.random() * 2.0;
-            const close = (open + high + low) / 3 + (Math.random() - 0.5) * 1.5;
+        for (let i = 0; i < timestamps.length; i++) {
+            const open = quote.open[i];
+            const high = quote.high[i];
+            const low = quote.low[i];
+            const close = quote.close[i];
+            const volume = quote.volume[i];
 
-            tempCandles.push({ time, open, high, low, close });
-            tempVolumes.push({ time, value: Math.floor(Math.random() * 800 + 200) });
+            // يوهو بيرجع null لبعض الشموع (فجوات تداول) - نتجاهلها
+            if (open == null || high == null || low == null || close == null) continue;
+
+            tempCandles.push({ time: timestamps[i], open, high, low, close });
+            tempVolumes.push({ time: timestamps[i], value: volume || 0 });
         }
+
+        if (tempCandles.length === 0) return;
 
         globalCandles = tempCandles;
         globalVolumes = tempVolumes;
+
+        // آخر سعر معروف من نفس الرد (احتياطي لو fetchLiveGoldPrice لسه ما جاوبش)
+        const metaPrice = result.meta?.regularMarketPrice;
+        if (metaPrice && lastLivePrice === 0) {
+            lastLivePrice = metaPrice;
+            priceElement.innerText = `$${metaPrice.toFixed(2)}`;
+        }
+
+        lockedSignalType = null;
+        lockedCandleTime = null;
 
         candlestickSeries.setData(globalCandles);
         analyzeMarket();
 
         chart.timeScale().setVisibleLogicalRange({
-            from: globalCandles.length - 30,
+            from: Math.max(0, globalCandles.length - 30),
             to: globalCandles.length - 1
         });
     } catch (err) {
-        console.error("Error loading chart data:", err);
+        console.error('خطأ في تحميل الشموع التاريخية:', err);
+    } finally {
+        isLoadingHistory = false;
     }
 }
 
+// -------------------------------------------------------------------------
+// سعر لحظي لعقد الذهب المستقبلي GC=F (بدل سبوت goldprice.org)
+// -------------------------------------------------------------------------
 async function fetchLiveGoldPrice() {
+    if (isFetchingPrice) return;
+    isFetchingPrice = true;
+
     try {
-        // جلب السعر الفوري العالمي الحقيقي للأونصة المطابق للشاشات والأسواق العالمية
-        const res = await fetch('https://data-asg.goldprice.org/dbXRates/USD');
+        const url = buildYahooProxyUrl('1m', '1d');
+        const res = await fetch(url);
         const json = await res.json();
-        
-        if (json && json.items && json.items.length > 0) {
-            const rawPrice = parseFloat(json.items[0].xauPrice);
-            
+
+        const meta = json?.chart?.result?.[0]?.meta;
+        const rawPrice = meta?.regularMarketPrice;
+
+        if (rawPrice) {
             if (lastLivePrice > 0) {
                 priceElement.style.color = rawPrice > lastLivePrice ? '#22c55e' : (rawPrice < lastLivePrice ? '#ef4444' : '#3b82f6');
             }
@@ -280,21 +387,31 @@ async function fetchLiveGoldPrice() {
             priceElement.innerText = `$${rawPrice.toFixed(2)}`;
 
             if (globalCandles.length === 0) {
-                loadChartData();
+                await loadChartData();
             } else {
                 analyzeMarket();
             }
         }
     } catch (err) {
-        console.error("Error fetching live gold price:", err);
+        console.error('خطأ في جلب سعر الفيوتشر اللحظي:', err);
+    } finally {
+        isFetchingPrice = false;
     }
 }
 
-function changeTimeframe(tf) {
+// -------------------------------------------------------------------------
+// أدوات التحكم بالواجهة
+// -------------------------------------------------------------------------
+function changeTimeframe(tf, evt) {
     currentTimeframe = tf;
     lockedSignalType = null;
+
     document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
+
+    // دعم استدعاء بدون تمرير event صريح (توافق مع onclick القديم)
+    const e = evt || window.event;
+    if (e && e.target) e.target.classList.add('active');
+
     loadChartData();
 }
 
@@ -310,8 +427,11 @@ function toggleVWAP() {
     if (globalCandles.length > 0) analyzeMarket();
 }
 
-// التشغيل الأولي
+// -------------------------------------------------------------------------
+// التشغيل: تحميل تاريخي أولي مرة واحدة، وسعر لحظي كل 5 ثواني
+// (كل ثانية كان مبالغًا فيه وبيزيد فرصة حظر الـ proxy المجاني)
+// -------------------------------------------------------------------------
+loadChartData();
 fetchLiveGoldPrice();
-
-// تحديث السعر المباشر باستمرار
-setInterval(fetchLiveGoldPrice, 1500);
+setInterval(fetchLiveGoldPrice, 5000);
+            
