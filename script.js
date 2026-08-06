@@ -153,9 +153,9 @@ function analyzeMarket() {
         const tp1Price = activePrice + dynamicTP;
         const tp2Price = activePrice + (dynamicTP * 1.8);
 
-        currentTradeSetup = { type: 'BUY (Spot)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
+        currentTradeSetup = { type: 'BUY (Futures)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
         
-        signalTagElement.innerHTML = `🟢 شراء فوري (Spot Buy)`;
+        signalTagElement.innerHTML = `🟢 شراء عقود آجل (Futures Buy)`;
         signalTagElement.className = `signal-tag signal-strong`;
         signalPowerElement.innerHTML = `<span dir="ltr">زخم صاعد قوي</span>`;
 
@@ -164,15 +164,15 @@ function analyzeMarket() {
         tp2ValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.tp2}</span>`;
 
         executeBtn.className = `execute-btn strong-buy-active`;
-        executeBtn.innerHTML = `🚀 شراء XAUT فوري (هدف $${dynamicTP.toFixed(1)}) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
+        executeBtn.innerHTML = `🚀 تنفيذ شراء فيوتشر (هدف $${dynamicTP.toFixed(1)}) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
     } else if (signalType === 'SELL') {
         const slPrice = activePrice + dynamicSL;
         const tp1Price = activePrice - dynamicTP;
         const tp2Price = activePrice - (dynamicTP * 1.8);
 
-        currentTradeSetup = { type: 'SELL (Spot)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
+        currentTradeSetup = { type: 'SELL (Futures)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
         
-        signalTagElement.innerHTML = `🔴 بيع فوري (Spot Sell)`;
+        signalTagElement.innerHTML = `🔴 بيع عقود آجل (Futures Sell)`;
         signalTagElement.className = `signal-tag signal-strong-sell`;
         signalPowerElement.innerHTML = `<span dir="ltr">زخم هابط قوي</span>`;
 
@@ -181,7 +181,7 @@ function analyzeMarket() {
         tp2ValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.tp2}</span>`;
 
         executeBtn.className = `execute-btn strong-sell-active`;
-        executeBtn.innerHTML = `💥 بيع XAUT فوري (هدف $${dynamicTP.toFixed(1)}) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
+        executeBtn.innerHTML = `💥 تنفيذ بيع فيوتشر (هدف $${dynamicTP.toFixed(1)}) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
     } else {
         currentTradeSetup = null;
         signalTagElement.innerHTML = `⏳ بانتظار استقرار الزخم...`;
@@ -221,12 +221,13 @@ function executeOrder() {
         alert('⚠️ انتظر إشارة واضحة للتنفيذ.');
         return;
     }
-    alert(`✅ تنفيذ صفقة فوري (Spot):\nالنوع: ${currentTradeSetup.type}\nالدخول: $${currentTradeSetup.entry}\nالهدف الأول: $${currentTradeSetup.tp1}\nالهدف الثاني: $${currentTradeSetup.tp2}\nوقف الخسارة: $${currentTradeSetup.sl}`);
+    alert(`✅ تنفيذ صفقة فيوتشر (Futures):\nالنوع: ${currentTradeSetup.type}\nالدخول: $${currentTradeSetup.entry}\nالهدف الأول: $${currentTradeSetup.tp1}\nالهدف الثاني: $${currentTradeSetup.tp2}\nوقف الخسارة: $${currentTradeSetup.sl}`);
 }
 
 async function loadChartData() {
     try {
-        const res = await fetch(`https://api.bybit.com/v5/market/kline?category=spot&symbol=XAUTUSDT&interval=${currentTimeframe}&limit=150`);
+        // تم ضبط الـ category على linear الخاصة بالفيوتشر والرمز XAUUSDT[span_2](start_span)[span_2](end_span)
+        const res = await fetch(`https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${currentTimeframe}&limit=150`);
         const data = await res.json();
 
         if (data && data.retCode === 0 && data.result && data.result.list) {
@@ -259,7 +260,8 @@ async function loadChartData() {
 
 async function fetchBybitPrice() {
     try {
-        const res = await fetch('https://api.bybit.com/v5/market/tickers?category=spot&symbol=XAUTUSDT');
+        // جلب سعر الفيوتشر المباشر لزوج الذهب[span_3](start_span)[span_3](end_span)
+        const res = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSDT');
         const data = await res.json();
         
         if (data && data.retCode === 0 && data.result && data.result.list.length > 0) {
@@ -304,3 +306,4 @@ fetchBybitPrice();
 
 setInterval(fetchBybitPrice, 400); 
 setInterval(loadChartData, 10000);
+            
