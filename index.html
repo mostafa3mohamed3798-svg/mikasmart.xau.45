@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold - Live Scalper</title>
+    <title>Mika Pro Gold - Dynamic Momentum Engine</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -172,10 +172,10 @@
 
     <div class="top-price-card">
         <div class="header-title">🛡️ Mika Dynamic Scalper - محرك الزخم المرن</div>
-        <div class="symbol-name">XAUUSD Live Direct Market</div>
+        <div class="symbol-name">Bybit Futures - XAUUSDT</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● متصل بالبث المباشر للذهب</div>
+        <div id="status" class="status-badge">● تحديث فوري فائق السرعة (400ms)</div>
         
         <div class="signal-container">
             <span id="signalTag" class="signal-tag signal-wait">⏳ بانتظار استقرار الزخم...</span>
@@ -237,7 +237,7 @@
         <div class="chart-container">
             <div id="chart"></div>
         </div>
-                </div>
+    </div>
         <script>
         const priceElement = document.getElementById('price');
         const signalTagElement = document.getElementById('signalTag');
@@ -438,7 +438,7 @@
             }
 
             vwapFilterVal.innerHTML = `<span dir="ltr">${activePrice >= currentVwap ? 'فوق VWAP' : 'تحت VWAP'}</span>`;
-            macdFilterVal.innerHTML = `<span dir="ltr">بث مباشر فوري</span>`;
+            macdFilterVal.innerHTML = `<span dir="ltr">نبض فوري (400ms)</span>`;
 
             candlestickSeries.update(globalCandles[globalCandles.length - 1]);
 
@@ -467,70 +467,53 @@
 
         async function loadChartData() {
             try {
-                const targetUrl = `https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${currentTimeframe}&limit=150`;
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-                const res = await fetch(proxyUrl);
-                const wrapper = await res.json();
-                
-                if (wrapper && wrapper.contents) {
-                    const data = JSON.parse(wrapper.contents);
-                    if (data && data.retCode === 0 && data.result && data.result.list) {
-                        const list = data.result.list.reverse();
-                        globalCandles = list.map(d => ({
-                            time: parseInt(d[0]) / 1000,
-                            open: parseFloat(d[1]),
-                            high: parseFloat(d[2]),
-                            low: parseFloat(d[3]),
-                            close: parseFloat(d[4])
-                        }));
-                        globalVolumes = list.map(d => ({
-                            time: parseInt(d[0]) / 1000,
-                            value: parseFloat(d[5])
-                        }));
-                        candlestickSeries.setData(globalCandles);
-                        
-                        // تحديث السعر الحالي من أحدث شمعة
-                        const latestClose = globalCandles[globalCandles.length - 1].close;
-                        lastLivePrice = latestClose;
-                        priceElement.innerText = `$${latestClose.toFixed(2)}`;
-                        
-                        chart.timeScale().setVisibleLogicalRange({
-                            from: globalCandles.length - 30,
-                            to: globalCandles.length - 1
-                        });
-                    }
+                const res = await fetch(`https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${currentTimeframe}&limit=150`);
+                const data = await res.json();
+
+                if (data && data.retCode === 0 && data.result && data.result.list) {
+                    const list = data.result.list.reverse();
+                    globalCandles = list.map(d => ({
+                        time: parseInt(d[0]) / 1000,
+                        open: parseFloat(d[1]),
+                        high: parseFloat(d[2]),
+                        low: parseFloat(d[3]),
+                        close: parseFloat(d[4])
+                    }));
+
+                    globalVolumes = list.map(d => ({
+                        time: parseInt(d[0]) / 1000,
+                        value: parseFloat(d[5])
+                    }));
+
+                    candlestickSeries.setData(globalCandles);
+                    if (lastLivePrice > 0) analyzeMarket();
+
+                    chart.timeScale().setVisibleLogicalRange({
+                        from: globalCandles.length - 30,
+                        to: globalCandles.length - 1
+                    });
                 }
             } catch (err) {}
         }
 
-        // دالة جلب السعر الفوري من الإنترنت مباشرة (تحديث كل ثانية)
-        async function fetchLivePrice() {
+        async function fetchBybitPrice() {
             try {
-                const targetUrl = `https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSDT`;
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-                const res = await fetch(proxyUrl);
-                const wrapper = await res.json();
+                const res = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSDT');
+                const data = await res.json();
                 
-                if (wrapper && wrapper.contents) {
-                    const data = JSON.parse(wrapper.contents);
-                    if (data && data.retCode === 0 && data.result && data.result.list && data.result.list.length > 0) {
-                        const rawPrice = parseFloat(data.result.list[0].lastPrice);
-                        if (rawPrice > 0) {
-                            if (lastLivePrice > 0) {
-                                priceElement.style.color = rawPrice > lastLivePrice ? '#22c55e' : (rawPrice < lastLivePrice ? '#ef4444' : '#3b82f6');
-                            }
-                            lastLivePrice = rawPrice;
-                            priceElement.innerText = `$${rawPrice.toFixed(2)}`;
+                if (data && data.retCode === 0 && data.result && data.result.list.length > 0) {
+                    const rawPrice = parseFloat(data.result.list[0].lastPrice);
+                    if (lastLivePrice > 0) {
+                        priceElement.style.color = rawPrice > lastLivePrice ? '#22c55e' : (rawPrice < lastLivePrice ? '#ef4444' : '#3b82f6');
+                    }
+                    lastLivePrice = rawPrice;
+                    priceElement.innerText = `$${rawPrice.toFixed(2)}`;
 
-                            if (globalCandles.length > 0) {
-                                analyzeMarket();
-                            }
-                        }
+                    if (globalCandles.length > 0) {
+                        analyzeMarket();
                     }
                 }
-            } catch (err) {
-                console.error("Waiting for live network...", err);
-            }
+            } catch (err) {}
         }
 
         function changeTimeframe(tf) {
@@ -554,10 +537,9 @@
         }
 
         loadChartData();
-        fetchLivePrice();
+        fetchBybitPrice();
         
-        // تحديث السعر الفوري كل ثانية والشارت كل 10 ثواني
-        setInterval(fetchLivePrice, 1000); 
+        setInterval(fetchBybitPrice, 400); 
         setInterval(loadChartData, 10000);  
     </script>
 </body>
