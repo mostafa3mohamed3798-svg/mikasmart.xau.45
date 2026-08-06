@@ -17,7 +17,7 @@ const bearishBar = document.getElementById('bearishBar');
 const candleTimer = document.getElementById('candleTimer');
 
 let lastLivePrice = 0;
-let currentTimeframe = '1';
+let currentTimeframe = '1m';
 let showEMAs = true;
 let showVWAP = true;
 let currentTradeSetup = null;
@@ -103,7 +103,8 @@ function analyzeCurrentCandle(candles, activePrice) {
     bullishBar.style.width = `${bullPct}%`;
     bearishBar.style.width = `${bearPct}%`;
 
-    const tfMinutes = parseInt(currentTimeframe) || 1;
+    const tfNum = parseInt(currentTimeframe) || 1;
+    const tfMinutes = currentTimeframe.includes('m') ? tfNum : (currentTimeframe.includes('h') ? tfNum * 60 : 1);
     const now = Math.floor(Date.now() / 1000);
     const elapsedSeconds = now - currentCandle.time;
     const totalSeconds = tfMinutes * 60;
@@ -226,13 +227,12 @@ function executeOrder() {
 
 async function loadChartData() {
     try {
-        // جلب الشموع لعقود الفيوتشر الحقيقية للذهب XAUTUSDT عبر category=linear
-        const res = await fetch(`https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUTUSDT&interval=${currentTimeframe}&limit=150`);
+        // جلب الشموع لعقود الفيوتشر الحقيقية لزوج الذهب XAUUSDT عبر Binance Futures API
+        const res = await fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=XAUUSDT&interval=${currentTimeframe}&limit=150`);
         const data = await res.json();
 
-        if (data && data.retCode === 0 && data.result && data.result.list) {
-            const list = data.result.list.reverse();
-            globalCandles = list.map(d => ({
+        if (Array.isArray(data)) {
+            globalCandles = data.map(d => ({
                 time: parseInt(d[0]) / 1000,
                 open: parseFloat(d[1]),
                 high: parseFloat(d[2]),
@@ -240,7 +240,7 @@ async function loadChartData() {
                 close: parseFloat(d[4])
             }));
 
-            globalVolumes = list.map(d => ({
+            globalVolumes = data.map(d => ({
                 time: parseInt(d[0]) / 1000,
                 value: parseFloat(d[5])
             }));
@@ -258,14 +258,14 @@ async function loadChartData() {
     }
 }
 
-async function fetchBybitPrice() {
+async function fetchBinancePrice() {
     try {
-        // جلب السعر المباشر للفيوتشر الحقيقي للذهب XAUTUSDT عبر category=linear
-        const res = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUTUSDT');
+        // جلب السعر المباشر للفيوتشر الحقيقي لزوج XAUUSDT
+        const res = await fetch('https://fapi.binance.com/fapi/v1/ticker/price?symbol=XAUUSDT');
         const data = await res.json();
         
-        if (data && data.retCode === 0 && data.result && data.result.list.length > 0) {
-            const rawPrice = parseFloat(data.result.list[0].lastPrice);
+        if (data && data.price) {
+            const rawPrice = parseFloat(data.price);
             if (lastLivePrice > 0) {
                 priceElement.style.color = rawPrice > lastLivePrice ? '#22c55e' : (rawPrice < lastLivePrice ? '#ef4444' : '#3b82f6');
             }
@@ -302,8 +302,7 @@ function toggleVWAP() {
 }
 
 loadChartData();
-fetchBybitPrice();
+fetchBinancePrice();
 
-setInterval(fetchBybitPrice, 400); 
+setInterval(fetchBinancePrice, 400); 
 setInterval(loadChartData, 10000);
-            
