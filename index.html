@@ -442,6 +442,11 @@
     // تشغيل الشارت وجلب البيانات عند فتح الصفحة
     initChart();
     fetchKlines();
+                   // تحديث المؤشرات مع كل جلب بيانات جديد
+if (typeof historicalData !== 'undefined') {
+    applyIndicatorsToUI(historicalData);
+}
+                   
     setInterval(fetchKlines, 5000); // تحديث كل 5 ثواني
 </script>
     <script src="indicators.js"></script>
