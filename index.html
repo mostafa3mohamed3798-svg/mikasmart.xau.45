@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold - Dynamic Momentum Engine</title>
+    <title>Mika Pro Gold - CFD Engine</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -172,7 +172,7 @@
 
     <div class="top-price-card">
         <div class="header-title">🛡️ Mika Dynamic Scalper - محرك الزخم المرن</div>
-        <div class="symbol-name">Bybit CFD - +XAUUSD</div>
+        <div class="symbol-name">Bybit CFD - XAUUSD</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
         <div id="status" class="status-badge">● تحديث فوري فائق السرعة (400ms)</div>
@@ -239,7 +239,7 @@
             <div id="chart"></div>
         </div>
     </div>
-    <script>
+        <script>
         const priceElement = document.getElementById('price');
         const signalTagElement = document.getElementById('signalTag');
         const signalPowerElement = document.getElementById('signalPower');
@@ -468,7 +468,6 @@
 
         async function loadChartData() {
             try {
-                // تم تعديل الرمز ليتطابق مع شارت الـ CFD (XAUUSD)
                 const res = await fetch(`https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSD&interval=${currentTimeframe}&limit=150`);
                 const data = await res.json();
 
@@ -500,7 +499,6 @@
 
         async function fetchBybitPrice() {
             try {
-                // تم تعديل الرمز لجلب السعر الفوري لـ XAUUSD
                 const res = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSD');
                 const data = await res.json();
                 
