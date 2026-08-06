@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold - CFD Engine</title>
+    <title>Mika Pro Gold - Spot Market Engine</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -158,7 +158,7 @@
 
         .chart-container { 
             width: 100%; 
-            height: 380px; 
+            height: 330px; 
             position: relative;
             border-radius: 8px;
             overflow: hidden;
@@ -171,11 +171,11 @@
 <body>
 
     <div class="top-price-card">
-        <div class="header-title">🛡️ Mika Dynamic Scalper - محرك الزخم المرن</div>
-        <div class="symbol-name">Gold CFD - XAUUSD (GitHub Direct Feed)</div>
+        <div class="header-title">🛡️ Mika Spot Gold (XAUT) - السوق الفوري</div>
+        <div class="symbol-name">Bybit Spot - XAUTUSDT (أوقية الذهب الفورية)</div>
         
-        <div id="price" class="price-display">جاري جلب السعر...</div>
-        <div id="status" class="status-badge">● جاري الاتصال بالسحابية</div>
+        <div id="price" class="price-display">جاري التحميل...</div>
+        <div id="status" class="status-badge">● تحديث فوري مباشر (Spot Market)</div>
         
         <div class="signal-container">
             <span id="signalTag" class="signal-tag signal-wait">⏳ بانتظار استقرار الزخم...</span>
@@ -227,7 +227,6 @@
                 <button class="tf-btn active" onclick="changeTimeframe('1')">1m</button>
                 <button class="tf-btn" onclick="changeTimeframe('5')">5m</button>
                 <button class="tf-btn" onclick="changeTimeframe('15')">15m</button>
-                <button class="tf-btn" onclick="changeTimeframe('240')">H4</button>
             </div>
             <div class="indicator-group">
                 <button id="emaToggle" class="indicator-btn btn-ema active" onclick="toggleEMA()">EMA</button>
@@ -240,6 +239,7 @@
         </div>
     </div>
 
+    <!-- ربط ملف الجافاسكريبت الخارجي -->
     <script src="script.js"></script>
 </body>
 </html>
