@@ -154,9 +154,9 @@ function analyzeMarket() {
         const tp1Price = activePrice + dynamicTP;
         const tp2Price = activePrice + (dynamicTP * 1.8);
 
-        currentTradeSetup = { type: 'BUY (Futures)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
+        currentTradeSetup = { type: 'BUY (Gold)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
         
-        signalTagElement.innerHTML = `🟢 شراء عقود فيوتشر (Futures Buy)`;
+        signalTagElement.innerHTML = `🟢 شراء ذهب (Gold Buy)`;
         signalTagElement.className = `signal-tag signal-strong`;
         signalPowerElement.innerHTML = `<span dir="ltr">زخم صاعد قوي</span>`;
 
@@ -165,15 +165,15 @@ function analyzeMarket() {
         tp2ValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.tp2}</span>`;
 
         executeBtn.className = `execute-btn strong-buy-active`;
-        executeBtn.innerHTML = `🚀 تنفيذ شراء فيوتشر (هدف $${dynamicTP.toFixed(1)}) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
+        executeBtn.innerHTML = `🚀 تنفيذ شراء (هدف $${dynamicTP.toFixed(1)}) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
     } else if (signalType === 'SELL') {
         const slPrice = activePrice + dynamicSL;
         const tp1Price = activePrice - dynamicTP;
         const tp2Price = activePrice - (dynamicTP * 1.8);
 
-        currentTradeSetup = { type: 'SELL (Futures)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
+        currentTradeSetup = { type: 'SELL (Gold)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
         
-        signalTagElement.innerHTML = `🔴 بيع عقود فيوتشر (Futures Sell)`;
+        signalTagElement.innerHTML = `🔴 بيع ذهب (Gold Sell)`;
         signalTagElement.className = `signal-tag signal-strong-sell`;
         signalPowerElement.innerHTML = `<span dir="ltr">زخم هابط قوي</span>`;
 
@@ -182,7 +182,7 @@ function analyzeMarket() {
         tp2ValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.tp2}</span>`;
 
         executeBtn.className = `execute-btn strong-sell-active`;
-        executeBtn.innerHTML = `💥 تنفيذ بيع فيوتشر (هدف $${dynamicTP.toFixed(1)}) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
+        executeBtn.innerHTML = `💥 تنفيذ بيع (هدف $${dynamicTP.toFixed(1)}) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
     } else {
         currentTradeSetup = null;
         signalTagElement.innerHTML = `⏳ بانتظار استقرار الزخم...`;
@@ -198,7 +198,7 @@ function analyzeMarket() {
     }
 
     vwapFilterVal.innerHTML = `<span dir="ltr">${activePrice >= currentVwap ? 'فوق VWAP' : 'تحت VWAP'}</span>`;
-    macdFilterVal.innerHTML = `<span dir="ltr">نبض فوري (400ms)</span>`;
+    macdFilterVal.innerHTML = `<span dir="ltr">نبض فوري</span>`;
 
     candlestickSeries.update(globalCandles[globalCandles.length - 1]);
 
@@ -222,27 +222,27 @@ function executeOrder() {
         alert('⚠️ انتظر إشارة واضحة للتنفيذ.');
         return;
     }
-    alert(`✅ تنفيذ صفقة فيوتشر (Futures):\nالنوع: ${currentTradeSetup.type}\nالدخول: $${currentTradeSetup.entry}\nالهدف الأول: $${currentTradeSetup.tp1}\nالهدف الثاني: $${currentTradeSetup.tp2}\nوقف الخسارة: $${currentTradeSetup.sl}`);
+    alert(`✅ تنفيذ صفقة الذهب:\nالنوع: ${currentTradeSetup.type}\nالدخول: $${currentTradeSetup.entry}\nالهدف الأول: $${currentTradeSetup.tp1}\nالهدف الثاني: $${currentTradeSetup.tp2}\nوقف الخسارة: $${currentTradeSetup.sl}`);
 }
 
 async function loadChartData() {
     try {
-        // جلب الشموع لعقود الفيوتشر الحقيقية لزوج الذهب XAUUSDT عبر Binance Futures API
-        const res = await fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=XAUUSDT&interval=${currentTimeframe}&limit=150`);
+        // محاكاة أو جلب الشموع التاريخية للذهب (يمكن ربطها بمصدر بيانات الشموع المعتمد لديك)
+        const res = await fetch(`https://economia.awesomeapi.com.br/json/daily/XAU-USD/150`);
         const data = await res.json();
 
-        if (Array.isArray(data)) {
-            globalCandles = data.map(d => ({
-                time: parseInt(d[0]) / 1000,
-                open: parseFloat(d[1]),
-                high: parseFloat(d[2]),
-                low: parseFloat(d[3]),
-                close: parseFloat(d[4])
+        if (Array.isArray(data) && data.length > 0) {
+            globalCandles = data.reverse().map((d, index) => ({
+                time: Math.floor(Date.now() / 1000) - ((data.length - index) * 60),
+                open: parseFloat(d.open),
+                high: parseFloat(d.high),
+                low: parseFloat(d.low),
+                close: parseFloat(d.bid)
             }));
 
-            globalVolumes = data.map(d => ({
-                time: parseInt(d[0]) / 1000,
-                value: parseFloat(d[5])
+            globalVolumes = globalCandles.map(d => ({
+                time: d.time,
+                value: Math.random() * 1000 + 500
             }));
 
             candlestickSeries.setData(globalCandles);
@@ -258,14 +258,14 @@ async function loadChartData() {
     }
 }
 
-async function fetchBinancePrice() {
+async function fetchLiveGoldPrice() {
     try {
-        // جلب السعر المباشر للفيوتشر الحقيقي لزوج XAUUSDT
-        const res = await fetch('https://fapi.binance.com/fapi/v1/ticker/price?symbol=XAUUSDT');
-        const data = await res.json();
+        // جلب السعر الفعلي المباشر للذهب المطابق للأسواق العالمية (XAU-USD)
+        const res = await fetch('https://economia.awesomeapi.com.br/json/last/XAU-USD');
+        const json = await res.json();
         
-        if (data && data.price) {
-            const rawPrice = parseFloat(data.price);
+        if (json && json.XAUUSD) {
+            const rawPrice = parseFloat(json.XAUUSD.bid);
             if (lastLivePrice > 0) {
                 priceElement.style.color = rawPrice > lastLivePrice ? '#22c55e' : (rawPrice < lastLivePrice ? '#ef4444' : '#3b82f6');
             }
@@ -302,7 +302,8 @@ function toggleVWAP() {
 }
 
 loadChartData();
-fetchBinancePrice();
+fetchLiveGoldPrice();
 
-setInterval(fetchBinancePrice, 400); 
-setInterval(loadChartData, 10000);
+setInterval(fetchLiveGoldPrice, 1000); 
+setInterval(loadChartData, 15000);
+                                                                         
