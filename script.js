@@ -326,3 +326,4 @@ fetchLivePrice();
 
 setInterval(fetchLivePrice, 2000); 
 setInterval(loadChartData, 10000);
+    
