@@ -1,12 +1,12 @@
 // =========================================================================
-// Gold Futures (GC=F) Tracker — النسخة المُصححة
+// Gold Futures (XAUUSDT) Tracker — النسخة المُصححة
 // التعديلات الأساسية:
-// 1) سعر حقيقي لعقود الذهب المستقبلية (GC=F) من Yahoo Finance عبر CORS proxy
-//    بدل سعر السبوت من goldprice.org
-// 2) شموع تاريخية حقيقية (من Yahoo) بدل التوليد العشوائي
+// 1) سعر حقيقي لعقد الذهب المستقبلي XAUUSDT من Binance Futures API مباشرة
+//    (رسمي، مجاني، بدون مفتاح، يدعم CORS من المتصفح - بدون أي proxy وسيط)
+// 2) شموع تاريخية حقيقية (من Binance klines) بدل التوليد العشوائي
 // 3) إغلاق الشمعة الحالية فعليًا وفتح شمعة جديدة عند بداية فريم زمني جديد
 // 4) إصلاح استخدام event الضمني في changeTimeframe
-// 5) تقليل تردد الطلبات لتفادي حظر الـ proxy
+// 5) تردد طلبات معقول (كل 3 ثواني) لاحترام حدود Binance للطلبات
 // =========================================================================
 
 const priceElement = document.getElementById('price');
@@ -43,25 +43,29 @@ let isFetchingPrice = false;
 let isLoadingHistory = false;
 
 // -------------------------------------------------------------------------
-// إعدادات الفريم الزمني: كل فريم له مدة بالثواني، ورينج/إنترفال يوهو المناسب
+// إعدادات الفريم الزمني: كل فريم له مدة بالثواني + كوود الإنترفال في Binance
 // -------------------------------------------------------------------------
 const TF_CONFIG = {
-    '1m':  { seconds: 60,  yahooInterval: '1m',  yahooRange: '1d'  },
-    '5m':  { seconds: 300, yahooInterval: '5m',  yahooRange: '5d'  },
-    '15m': { seconds: 900, yahooInterval: '15m', yahooRange: '1mo' },
+    '1m':  { seconds: 60,  binanceInterval: '1m'  },
+    '5m':  { seconds: 300, binanceInterval: '5m'  },
+    '15m': { seconds: 900, binanceInterval: '15m' },
 };
 
-const GOLD_SYMBOL = 'GC=F'; // عقد الذهب المستقبلي (COMEX)
+// Binance Futures - XAUUSDT (عقد الذهب المستقبلي بالدولار على Binance)
+const GOLD_SYMBOL = 'XAUUSDT';
+const BINANCE_FAPI = 'https://fapi.binance.com/fapi/v1';
 
 function getTfSeconds() {
     return TF_CONFIG[currentTimeframe].seconds;
 }
 
-// يبني رابط يوهو فايننس ويمرره عبر CORS proxy مجاني (allorigins)
-// ⚠️ للاستخدام الجدي/الإنتاجي: استبدل ده بسيرفر خلفي بسيط تتحكم فيه بنفسك
-function buildYahooProxyUrl(interval, range) {
-    const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(GOLD_SYMBOL)}?interval=${interval}&range=${range}`;
-    return `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`;
+// Binance Futures API عام ومفتوح CORS - بدون أي proxy وسيط
+function buildBinanceKlinesUrl(interval, limit) {
+    return `${BINANCE_FAPI}/klines?symbol=${GOLD_SYMBOL}&interval=${interval}&limit=${limit}`;
+}
+
+function buildBinancePriceUrl() {
+    return `${BINANCE_FAPI}/ticker/price?symbol=${GOLD_SYMBOL}`;
 }
 
 const chart = LightweightCharts.createChart(document.getElementById('chart'), {
@@ -296,7 +300,7 @@ function executeOrder() {
 }
 
 // -------------------------------------------------------------------------
-// تحميل شموع حقيقية من Yahoo Finance (GC=F) بدل التوليد العشوائي
+// تحميل شموع حقيقية من Binance Futures (XAUUSDT) بدل التوليد العشوائي
 // -------------------------------------------------------------------------
 async function loadChartData() {
     if (isLoadingHistory) return;
@@ -304,47 +308,41 @@ async function loadChartData() {
 
     try {
         const cfg = TF_CONFIG[currentTimeframe];
-        const url = buildYahooProxyUrl(cfg.yahooInterval, cfg.yahooRange);
+        const url = buildBinanceKlinesUrl(cfg.binanceInterval, 500);
 
         const res = await fetch(url);
-        const json = await res.json();
+        const raw = await res.json();
 
-        const result = json?.chart?.result?.[0];
-        if (!result || !result.timestamp) {
-            console.error('لا توجد بيانات شموع من Yahoo لهذا الرمز/الفريم.');
+        if (!Array.isArray(raw) || raw.length === 0) {
+            console.error('لا توجد بيانات شموع من Binance لهذا الرمز/الفريم.');
             return;
         }
 
-        const timestamps = result.timestamp;
-        const quote = result.indicators.quote[0];
-
+        // شكل كل شمعة من Binance:
+        // [openTime, open, high, low, close, volume, closeTime, ...]
         let tempCandles = [];
         let tempVolumes = [];
 
-        for (let i = 0; i < timestamps.length; i++) {
-            const open = quote.open[i];
-            const high = quote.high[i];
-            const low = quote.low[i];
-            const close = quote.close[i];
-            const volume = quote.volume[i];
+        for (const k of raw) {
+            const timeSec = Math.floor(k[0] / 1000);
+            const open = parseFloat(k[1]);
+            const high = parseFloat(k[2]);
+            const low = parseFloat(k[3]);
+            const close = parseFloat(k[4]);
+            const volume = parseFloat(k[5]);
 
-            // يوهو بيرجع null لبعض الشموع (فجوات تداول) - نتجاهلها
-            if (open == null || high == null || low == null || close == null) continue;
-
-            tempCandles.push({ time: timestamps[i], open, high, low, close });
-            tempVolumes.push({ time: timestamps[i], value: volume || 0 });
+            tempCandles.push({ time: timeSec, open, high, low, close });
+            tempVolumes.push({ time: timeSec, value: volume || 0 });
         }
-
-        if (tempCandles.length === 0) return;
 
         globalCandles = tempCandles;
         globalVolumes = tempVolumes;
 
-        // آخر سعر معروف من نفس الرد (احتياطي لو fetchLiveGoldPrice لسه ما جاوبش)
-        const metaPrice = result.meta?.regularMarketPrice;
-        if (metaPrice && lastLivePrice === 0) {
-            lastLivePrice = metaPrice;
-            priceElement.innerText = `$${metaPrice.toFixed(2)}`;
+        // احتياطي: لو السعر اللحظي لسه ما جاله رد، استخدم إقفال آخر شمعة
+        if (lastLivePrice === 0) {
+            const lastClose = globalCandles[globalCandles.length - 1].close;
+            lastLivePrice = lastClose;
+            priceElement.innerText = `$${lastClose.toFixed(2)}`;
         }
 
         lockedSignalType = null;
@@ -365,19 +363,18 @@ async function loadChartData() {
 }
 
 // -------------------------------------------------------------------------
-// سعر لحظي لعقد الذهب المستقبلي GC=F (بدل سبوت goldprice.org)
+// سعر لحظي لعقد الذهب المستقبلي XAUUSDT من Binance Futures مباشرة
 // -------------------------------------------------------------------------
 async function fetchLiveGoldPrice() {
     if (isFetchingPrice) return;
     isFetchingPrice = true;
 
     try {
-        const url = buildYahooProxyUrl('1m', '1d');
+        const url = buildBinancePriceUrl();
         const res = await fetch(url);
         const json = await res.json();
 
-        const meta = json?.chart?.result?.[0]?.meta;
-        const rawPrice = meta?.regularMarketPrice;
+        const rawPrice = parseFloat(json?.price);
 
         if (rawPrice) {
             if (lastLivePrice > 0) {
@@ -428,10 +425,9 @@ function toggleVWAP() {
 }
 
 // -------------------------------------------------------------------------
-// التشغيل: تحميل تاريخي أولي مرة واحدة، وسعر لحظي كل 5 ثواني
-// (كل ثانية كان مبالغًا فيه وبيزيد فرصة حظر الـ proxy المجاني)
+// التشغيل: تحميل تاريخي أولي مرة واحدة، وسعر لحظي كل 3 ثواني
+// (Binance بيسمح بمعدل طلبات عالي، لكن كل 3 ثواني كافي جدًا للعرض اللحظي)
 // -------------------------------------------------------------------------
 loadChartData();
 fetchLiveGoldPrice();
-setInterval(fetchLiveGoldPrice, 5000);
-            
+setInterval(fetchLiveGoldPrice, 3000);
