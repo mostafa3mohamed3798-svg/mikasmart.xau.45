@@ -277,16 +277,18 @@ function generateFallbackData() {
 
 async function fetchLivePrice() {
     try {
-        const res = await fetch('https://api.coinbase.com/v2/prices/PAXG-USD/spot');
+        const res = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSDT');
         const data = await res.json();
-        if (data && data.data && data.data.amount) {
-            const rawPrice = parseFloat(data.data.amount);
+        
+        if (data && data.result && data.result.list && data.result.list.length > 0) {
+            const rawPrice = parseFloat(data.result.list[0].lastPrice);
+            
             if (lastLivePrice > 0) {
                 priceElement.style.color = rawPrice > lastLivePrice ? '#22c55e' : (rawPrice < lastLivePrice ? '#ef4444' : '#3b82f6');
             }
             lastLivePrice = rawPrice;
             priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-            statusElement.innerText = "● متصل بالسعر المباشر بنجاح";
+            statusElement.innerText = "● متصل بـ Bybit مباشر";
             statusElement.style.color = "#22c55e";
 
             if (globalCandles.length === 0) generateFallbackData();
@@ -326,4 +328,3 @@ fetchLivePrice();
 
 setInterval(fetchLivePrice, 2000); 
 setInterval(loadChartData, 10000);
-    
