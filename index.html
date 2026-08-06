@@ -158,7 +158,7 @@
 
         .chart-container { 
             width: 100%; 
-            height: 330px; 
+            height: 380px; /* زيادة الطرف قليلاً لتوضيح الشموع */
             position: relative;
             border-radius: 8px;
             overflow: hidden;
@@ -227,6 +227,7 @@
                 <button class="tf-btn active" onclick="changeTimeframe('1')">1m</button>
                 <button class="tf-btn" onclick="changeTimeframe('5')">5m</button>
                 <button class="tf-btn" onclick="changeTimeframe('15')">15m</button>
+                <button class="tf-btn" onclick="changeTimeframe('240')">H4</button>
             </div>
             <div class="indicator-group">
                 <button id="emaToggle" class="indicator-btn btn-ema active" onclick="toggleEMA()">EMA</button>
@@ -488,8 +489,9 @@
                     candlestickSeries.setData(globalCandles);
                     if (lastLivePrice > 0) analyzeMarket();
 
+                    // عرض عدد أقل من الشموع لتكون واضحة وكبيرة مثل الشارت الاحترافي
                     chart.timeScale().setVisibleLogicalRange({
-                        from: globalCandles.length - 30,
+                        from: globalCandles.length - 20,
                         to: globalCandles.length - 1
                     });
                 }
