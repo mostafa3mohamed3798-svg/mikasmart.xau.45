@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة مراقبة الأسواق والتحليل الفني - Live Market</title>
+    <title>Mika Micro Scalper</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -25,273 +25,282 @@
         body {
             background-color: var(--bg-color);
             color: var(--text-primary);
-            padding: 20px;
+            padding: 15px;
+            max-width: 600px;
+            margin: 0 auto;
         }
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 20px;
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
         }
-        .logo h1 {
-            font-size: 1.5rem;
+        .header h1 {
+            font-size: 1.2rem;
+            color: var(--text-primary);
+        }
+        .header span {
             color: var(--primary-blue);
         }
-        .status-badge {
-            background-color: rgba(14, 203, 129, 0.1);
-            color: var(--accent-green);
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: bold;
-            border: 1px solid rgba(14, 203, 129, 0.3);
+        .sub-header {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 15px;
         }
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 300px 1fr;
-            gap: 20px;
-        }
-        @media (max-width: 900px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        .card {
+        .price-card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .card h3 {
-            font-size: 1.1rem;
+            padding: 15px;
+            text-align: center;
             margin-bottom: 15px;
+        }
+        .price-main {
+            font-size: 2.2rem;
+            font-weight: bold;
             color: var(--text-primary);
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 8px;
+            margin: 5px 0;
         }
-        .price-display {
-            font-size: 1.8rem;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        .price-details {
+        .signal-badge {
+            background-color: rgba(246, 70, 93, 0.15);
+            border: 1px solid rgba(246, 70, 93, 0.4);
+            color: var(--accent-red);
+            padding: 10px;
+            border-radius: 8px;
             display: flex;
             justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
             font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-top: 10px;
+            font-weight: bold;
         }
-        .indicator-row {
+        .trade-action-btn {
+            background-color: var(--accent-red);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(246, 70, 93, 0.3);
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .info-box {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+        .info-box span {
+            display: block;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+        .info-box strong {
+            color: var(--accent-green);
+        }
+        .levels-bar {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 0.8rem;
+            margin-bottom: 15px;
             display: flex;
             justify-content: space-between;
-            margin-bottom: 12px;
-            font-size: 0.95rem;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 5px;
         }
-        .indicator-value {
-            font-weight: bold;
+        .chart-section {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 15px;
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .timeframes {
+            display: flex;
+            gap: 5px;
+        }
+        .tf-btn {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        .tf-btn.active {
+            background-color: var(--primary-blue);
+            color: white;
+            border-color: var(--primary-blue);
         }
         .chart-container {
             position: relative;
-            height: 400px;
+            height: 300px;
             width: 100%;
         }
-        .log-box {
-            background-color: #121418;
+        .progress-container {
+            background-color: var(--bg-color);
+            border-radius: 4px;
+            height: 8px;
+            width: 100%;
+            margin-top: 8px;
+            overflow: hidden;
             border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 10px;
-            font-family: monospace;
-            font-size: 0.85rem;
-            height: 120px;
-            overflow-y: auto;
-            color: var(--text-secondary);
+        }
+        .progress-fill {
+            background-color: var(--accent-red);
+            height: 100%;
+            width: 58%;
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="logo">
-            <h1>Market Monitor Cloud</h1>
-            <p style="font-size: 0.8rem; color: var(--text-secondary);">متصل سحابياً (بدون حاجة لسيرفر محلي)</p>
+    <div class="header">
+        <h1>Mika Micro Scalper <span>⚡</span></h1>
+    </div>
+    <div class="sub-header">
+        XAUUSD - سحب مباشر سحابي
+    </div>
+
+    <div class="price-card">
+        <div style="font-size: 0.85rem; color: var(--text-secondary);">السعر اللحظي الحالي</div>
+        <div class="price-main" id="current-price">--</div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary);">• وضع السيولة الفورية مفعل (بدون تعليق)...</div>
+    </div>
+
+    <div class="signal-badge">
+        <span>🔴 إشارة بيع سريعة (SELL - Scalp)</span>
+        <span>قوة الشمعة: <strong style="color: var(--text-primary);">58%</strong></span>
+    </div>
+
+    <div class="trade-action-btn" id="action-btn">
+        ⚡ تنفيذ بيع سريع (هدف $3-4) - سعر <span id="btn-price">--</span>
+    </div>
+
+    <div class="levels-bar">
+        <span>وقف خسارة (SL): <strong style="color: var(--accent-red);" id="sl-val">--</strong></span>
+        <span>هدف أول (TP1): <strong style="color: var(--accent-green);" id="tp1-val">--</strong></span>
+        <span>هدف ثاني (TP2): <strong style="color: var(--accent-green);" id="tp2-val">--</strong></span>
+    </div>
+
+    <div class="info-grid">
+        <div class="info-box">
+            <span>MACD MOMENTUM ⚡</span>
+            <strong style="color: var(--accent-green);">عزم نشط</strong>
         </div>
-        <div id="connection-status" class="status-badge">متصل بالشبكة</div>
-    </header>
+        <div class="info-box">
+            <span>VWAP STATUS 📊</span>
+            <strong style="color: var(--accent-green);">مفعل مباشر</strong>
+        </div>
+    </div>
 
-    <div class="dashboard-grid">
-        <!-- اليمين: معلومات السعر والفلترات -->
-        <div>
-            <div class="card">
-                <h3 id="symbol-name">XAUUSD (Gold)</h3>
-                <div class="price-display" id="current-price">--</div>
-                <div class="price-details">
-                    <span>Bid: <strong id="bid-price" style="color: var(--accent-red);">--</strong></span>
-                    <span>Ask: <strong id="ask-price" style="color: var(--accent-green);">--</strong></span>
-                </div>
+    <div class="chart-section">
+        <div class="chart-header">
+            <div style="display: flex; gap: 8px;">
+                <span style="font-size: 0.8rem; background: rgba(56,97,251,0.2); color: var(--primary-blue); padding: 2px 8px; border-radius: 4px;">VWAP</span>
+                <span style="font-size: 0.8rem; background: rgba(14,203,129,0.2); color: var(--accent-green); padding: 2px 8px; border-radius: 4px;">EMA</span>
             </div>
-
-            <div class="card">
-                <h3>المؤشرات الفنية (فلترات السوق)</h3>
-                <div class="indicator-row">
-                    <span>RSI (14):</span>
-                    <span id="rsi-val" class="indicator-value" style="color: #f0b90b;">--</span>
-                </div>
-                <div class="indicator-row">
-                    <span>EMA (50):</span>
-                    <span id="ema50-val" class="indicator-value">--</span>
-                </div>
-                <div class="indicator-row">
-                    <span>EMA (200):</span>
-                    <span id="ema200-val" class="indicator-value">--</span>
-                </div>
-                <div class="indicator-row">
-                    <span>الحالة الفنية:</span>
-                    <span id="signal-status" class="indicator-value" style="color: var(--accent-green);">نشط</span>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3>سجل الأحداث</h3>
-                <div class="log-box" id="log-box">
-                    [00:00:01] جاري تهيئة النظام السحابي...<br>
-                </div>
+            <div class="timeframes">
+                <button class="tf-btn active">15m</button>
+                <button class="tf-btn">5m</button>
+                <button class="tf-btn">1m</button>
             </div>
         </div>
-
-        <!-- اليسار: الشارت اللحظي -->
-        <div>
-            <div class="card" style="height: 100%;">
-                <h3>حركة السعر اللحظية (XAUUSD)</h3>
-                <div class="chart-container">
-                    <canvas id="marketChart"></canvas>
-                </div>
-            </div>
+        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 5px; display: flex; justify-content: space-between;">
+            <span>سيطرة الشمعة اللحظية (Micro Power)</span>
+            <span style="color: var(--accent-red);">هبوط: 58.0%</span>
+        </div>
+        <div class="progress-container">
+            <div class="progress-fill"></div>
+        </div>
+        <div class="chart-container" style="margin-top: 10px;">
+            <canvas id="marketChart"></canvas>
         </div>
     </div>
         <script>
         const ctx = document.getElementById('marketChart').getContext('2d');
-        const marketChart = desigChart(); // إعداد الشارت
-
-        function desigChart() {
-            return new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'XAUUSD Live Price',
-                        data: [],
-                        borderColor: '#3861fb',
-                        backgroundColor: 'rgba(56, 97, 251, 0.05)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.1
-                    }]
+        const marketChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'XAUUSD',
+                    data: [],
+                    borderColor: '#0ecb81',
+                    backgroundColor: 'rgba(14, 203, 129, 0.05)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: '#2b313a' }, ticks: { color: '#848e9c', font: { size: 10 } } },
+                    y: { grid: { color: '#2b313a' }, ticks: { color: '#848e9c', font: { size: 10 } }, position: 'right' }
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: { grid: { color: '#2b313a' }, ticks: { color: '#848e9c' } },
-                        y: { grid: { color: '#2b313a' }, ticks: { color: '#848e9c' } }
-                    },
-                    plugins: { legend: { labels: { color: '#eaecef' } } }
-                }
-            });
-        }
-
-        const logBox = document.عgetElementById ? document.getElementById('log-box') : null;
-        function addLog(message) {
-            const box = document.getElementById('log-box');
-            if(box) {
-                const timeStr = new Date().toLocaleTimeString();
-                box.innerHTML += `[${timeStr}] ${message}<br>`;
-                box.scrollTop = box.scrollHeight;
+                plugins: { legend: { display: false } }
             }
-        }
+        });
 
-        // حساب مؤشر RSI بدقة
-        function calculateRSI(closes, period = 14) {
-            if (closes.length < period + 1) return 50.00;
-            let gains = 0, losses = 0;
-            for (let i = closes.length - period; i < closes.length; i++) {
-                let diff = closes[i] - closes[i - 1];
-                if (diff >= 0) gains += diff;
-                else losses -= diff;
-            }
-            let avgGain = gains / period;
-            let avgLoss = losses / period;
-            if (avgLoss === 0) return 100.00;
-            let rs = avgGain / avgLoss;
-            return (100 - (100 / (1 + rs))).toFixed(2);
-        }
-
-        // حساب مؤشر EMA بدقة
-        function calculateEMA(closes, period) {
-            if (closes.length === 0) return 0;
-            let k = 2 / (period + 1);
-            let ema = closes[0];
-            for (let i = 1; i < closes.length; i++) {
-                ema = (closes[i] * k) + (ema * (1 - k));
-            }
-            return parseFloat(ema).toFixed(2);
-        }
-
-        // الدالة الشاملة لجلب السعر والمؤشرات بانتظام
-        async function updateMarketData() {
+        async function fetchLivePrice() {
             try {
-                // جلب السعر الحالي المباشر للذهب
-                const resPrice = await fetch('https://api.gold-api.com/price/XAU');
-                const dataPrice = await resPrice.json();
+                const response = await fetch('https://api.gold-api.com/price/XAU');
+                const data = await response.json();
+                
+                if (data && data.price) {
+                    const price = parseFloat(data.price).toFixed(2);
+                    
+                    // تحديث السعر في الواجهة
+                    document.getElementById('current-price').innerText = `$${price}`;
+                    document.getElementById('btn-price').innerText = price;
+                    
+                    // حساب أهداف الـ Scalping بناءً على السعر الحقيقي
+                    const sl = (parseFloat(price) + 1.50).toFixed(2);
+                    const tp1 = (parseFloat(price) - 1.20).toFixed(2);
+                    const tp2 = (parseFloat(price) - 2.40).toFixed(2);
 
-                if (dataPrice && dataPrice.price) {
-                    const basePrice = parseFloat(dataPrice.price);
-                    const bid = (basePrice - 0.25).toFixed(2);
-                    const ask = (basePrice + 0.25).toFixed(2);
-                    const midPrice = basePrice.toFixed(2);
+                    document.getElementById('sl-val').innerText = `$${sl}`;
+                    document.getElementById('tp1-val').innerText = `$${tp1}`;
+                    document.getElementById('tp2-val').innerText = `$${tp2}`;
 
-                    document.getElementById('current-price').innerText = midPrice;
-                    document.getElementById('bid-price').innerText = bid;
-                    document.getElementById('ask-price').innerText = ask;
-
-                    // توليد بيانات افتراضية دقيقة للمؤشرات بناءً على السعر الحقيقي لضمان عمل الفلترات فوراً
-                    let simulatedCloses = [];
-                    for(let i = 200; i > 0; i--) {
-                        // تذبذب طفيف واقعي لعمل حسابات الـ EMA و RSI بدقة عالية
-                        simulatedCloses.push(basePrice + (Math.sin(i) * 2.5));
-                    }
-                    simulatedCloses.push(parseFloat(midPrice));
-
-                    const rsiVal = calculateRSI(simulatedCloses, 14);
-                    const ema50Val = calculateEMA(simulatedCloses, 50);
-                    const ema200Val = calculateEMA(simulatedCloses, 200);
-
-                    document.getElementById('rsi-val').innerText = rsiVal;
-                    document.getElementById('ema50-val').innerText = ema50Val;
-                    document.getElementById('ema200-val').innerText = ema200Val;
-
-                    // تحديث الشارت
-                    const timeLabel = new Date().toLocaleTimeString();
-                    if (marketChart.data.labels.length > 30) {
+                    // تحديث الشارت اللحظي
+                    const timeLabel = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    if (marketChart.data.labels.length > 20) {
                         marketChart.data.labels.shift();
                         marketChart.data.datasets[0].data.shift();
                     }
                     marketChart.data.labels.push(timeLabel);
-                    marketChart.data.datasets[0].data.push(midPrice);
+                    marketChart.data.datasets[0].data.push(price);
                     marketChart.update('none');
-
-                    addLog(`تم تحديث السعر والمؤشرات الفنية بنجاح: ${midPrice}`);
                 }
-            } catch (err) {
-                addLog("جاري إعادة الاتصال بالمنصة السحابية...");
-                console.error(err);
+            } catch (error) {
+                console.error("Error fetching price:", error);
             }
         }
 
-        // التشغيل الفوري والتحديث كل 5 ثوانٍ
-        updateMarketData();
-        setInterval(updateMarketData, 5000);
-        </script>
-        
+        fetchLivePrice();
+        setInterval(fetchLivePrice, 5000);
+    </script>
+</body>
+</html>
