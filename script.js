@@ -107,7 +107,6 @@ function updateCurrentCandle(activePrice) {
     let currentCandle = globalCandles[globalCandles.length - 1];
 
     if (!currentCandle || currentCandle.time !== periodStart) {
-        // فريم زمني جديد بدأ -> اقفل الشمعة القديمة وافتح شمعة جديدة حقيقية
         currentCandle = {
             time: periodStart,
             open: activePrice,
@@ -118,13 +117,11 @@ function updateCurrentCandle(activePrice) {
         globalCandles.push(currentCandle);
         globalVolumes.push({ time: periodStart, value: 0 });
 
-        // حافظ على حجم معقول للتاريخ المعروض
         if (globalCandles.length > 500) {
             globalCandles.shift();
             globalVolumes.shift();
         }
 
-        // شمعة جديدة = لازم نعيد فتح قفل الإشارة
         lockedSignalType = null;
     } else {
         if (activePrice > currentCandle.high) currentCandle.high = activePrice;
@@ -299,7 +296,7 @@ function loadChartData() {
 }
 
 // -------------------------------------------------------------------------
-// دالة جلب السعر المباشر متوافقة تماماً مع Bybit V5 API
+// دالة جلب السعر المباشر من Bybit V5 API
 // -------------------------------------------------------------------------
 async function fetchLiveGoldPrice() {
     if (isFetchingPrice) return;
@@ -380,4 +377,3 @@ document.addEventListener('visibilitychange', () => {
         fetchLiveGoldPrice();
     }
 });
-            
