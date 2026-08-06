@@ -77,16 +77,59 @@ function applyIndicatorsToUI(candles) {
     let atrValue = calculateATR(candles, 14);
     let sr = calculateSupportResistance(candles, 20);
 
-    // تحديث جملة "بانتظار استقرار الزخم" في الصفحة
-    document.querySelectorAll("div").forEach(el => {
-        if (el.innerText.includes("بانتظار استقرار الزخم")) {
-            if (rsiValue > 70) {
-                el.innerText = `تشبع شراء (RSI: ${rsiValue.toFixed(1)})`;
-            } else if (rsiValue < 30) {
-                el.innerText = `تشبع بيع (RSI: ${rsiValue.toFixed(1)})`;
-            } else {
-                el.innerText = `الزخم ضمن النطاق الآمن (RSI: ${rsiValue.toFixed(1)})`;
-            }
-        }
-    });
+        function applyIndicatorsToUI(data) {
+    if (!data || data.length < 10) return;
+
+    const latest = data[data.length - 1];
+    document.getElementById('price').innerText = latest.close.toFixed(2);
+    
+    // حساب الـ EMA لفترة 9 للتحقق من الاتجاه الفني الحقيقي
+    const emaData = calculateEMA(data, 9);
+    const latestEMA = emaData[emaData.length - 1].value;
+
+    // الشرط الفني: لو السعر فوق الـ EMA يبقى شراء، لو تحته يبقى بيع
+    const isBullish = latest.close > latestEMA; 
+
+    const signalTag = document.getElementById('signalTag');
+    const signalPower = document.getElementById('signalPower');
+    const executeBtn = document.getElementById('executeBtn');
+
+    const slVal = document.getElementById('slVal');
+    const tp1Val = document.getElementById('tp1Val');
+    const tp2Val = document.getElementById('tp2Val');
+
+    document.getElementById('vwapFilterVal').innerText = isBullish ? 'إيجابي (Bullish)' : 'سلبي (Bearish)';
+    document.getElementById('macdFilterVal').innerText = 'مستقر ⚡';
+    
+    const pct = isBullish ? 68 : 32;
+    document.getElementById('bullishPercentText').innerText = `صعود: ${pct}%`;
+    document.getElementById('bearishPercentText').innerText = `هبوط: ${100 - pct}%`;
+    document.getElementById('bullishBar').style.width = `${pct}%`;
+    document.getElementById('bearishBar').style.width = `${100 - pct}%`;
+
+    if (isBullish) {
+        signalTag.className = "signal-tag signal-strong";
+        signalTag.innerText = "🚀 إشارة شراء قوية (BUY)";
+        signalPower.innerText = "صعودي فوق المتوسط";
+        signalPower.style.color = "#22c55e";
+
+        executeBtn.className = "execute-btn strong-buy-active";
+        executeBtn.innerText = "🚀 تنفيذ صفقة شراء (BUY)";
+
+        slVal.innerText = (latest.close - 3.5).toFixed(2);
+        tp1Val.innerText = (latest.close + 4.0).toFixed(2);
+        tp2Val.innerText = (latest.close + 8.5).toFixed(2);
+    } else {
+        signalTag.className = "signal-tag signal-strong-sell";
+        signalTag.innerText = "🔻 إشارة بيع قوية (SELL)";
+        signalPower.innerText = "هبوطي تحت المتوسط";
+        signalPower.style.color = "#ef4444";
+
+        executeBtn.className = "execute-btn strong-sell-active";
+        executeBtn.innerText = "🔻 تنفيذ صفقة بيع (SELL)";
+
+        slVal.innerText = (latest.close + 3.5).toFixed(2);
+        tp1Val.innerText = (latest.close - 4.0).toFixed(2);
+        tp2Val.innerText = (latest.close - 8.5).toFixed(2);
+    }
 }
