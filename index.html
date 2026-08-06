@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold - MT5 Dynamic Scalper</title>
+    <title>Mika Pro Gold - Live Scalper</title>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -172,10 +172,10 @@
 
     <div class="top-price-card">
         <div class="header-title">🛡️ Mika Dynamic Scalper - محرك الزخم المرن</div>
-        <div class="symbol-name">MetaTrader 5 - XAUUSD (MT5 Bridge)</div>
+        <div class="symbol-name">XAUUSD Live Direct Market</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● متصل بسيرفر الموبايل المحلي</div>
+        <div id="status" class="status-badge">● متصل بالبث المباشر للذهب</div>
         
         <div class="signal-container">
             <span id="signalTag" class="signal-tag signal-wait">⏳ بانتظار استقرار الزخم...</span>
@@ -237,7 +237,7 @@
         <div class="chart-container">
             <div id="chart"></div>
         </div>
-    </div>
+                </div>
         <script>
         const priceElement = document.getElementById('price');
         const signalTagElement = document.getElementById('signalTag');
@@ -438,7 +438,7 @@
             }
 
             vwapFilterVal.innerHTML = `<span dir="ltr">${activePrice >= currentVwap ? 'فوق VWAP' : 'تحت VWAP'}</span>`;
-            macdFilterVal.innerHTML = `<span dir="ltr">نبض MT5 المحلي</span>`;
+            macdFilterVal.innerHTML = `<span dir="ltr">بث مباشر فوري</span>`;
 
             candlestickSeries.update(globalCandles[globalCandles.length - 1]);
 
@@ -465,54 +465,71 @@
             alert(`✅ تم التنفيذ بنجاح!\nالنوع: ${currentTradeSetup.type}\nالدخول: $${currentTradeSetup.entry}\nالهدف الأول (TP1): $${currentTradeSetup.tp1}\nالهدف الثاني (TP2): $${currentTradeSetup.tp2}\nوقف الخسارة (SL): $${currentTradeSetup.sl}`);
         }
 
-        async function loadInitialChartData() {
+        async function loadChartData() {
             try {
-                const baseTime = Math.floor(Date.now() / 1000) - (150 * 60);
-                let currentP = 2350.0;
-                globalCandles = [];
-                globalVolumes = [];
+                const targetUrl = `https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${currentTimeframe}&limit=150`;
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+                const res = await fetch(proxyUrl);
+                const wrapper = await res.json();
                 
-                for(let i = 0; i < 150; i++) {
-                    const time = baseTime + (i * 60);
-                    const change = (Math.random() - 0.48) * 3;
-                    const open = currentP;
-                    const close = open + change;
-                    const high = Math.max(open, close) + Math.random() * 1.5;
-                    const low = Math.min(open, close) - Math.random() * 1.5;
-                    currentP = close;
-                    
-                    globalCandles.push({ time, open, high, low, close });
-                    globalVolumes.push({ time, value: Math.floor(Math.random() * 100) + 20 });
+                if (wrapper && wrapper.contents) {
+                    const data = JSON.parse(wrapper.contents);
+                    if (data && data.retCode === 0 && data.result && data.result.list) {
+                        const list = data.result.list.reverse();
+                        globalCandles = list.map(d => ({
+                            time: parseInt(d[0]) / 1000,
+                            open: parseFloat(d[1]),
+                            high: parseFloat(d[2]),
+                            low: parseFloat(d[3]),
+                            close: parseFloat(d[4])
+                        }));
+                        globalVolumes = list.map(d => ({
+                            time: parseInt(d[0]) / 1000,
+                            value: parseFloat(d[5])
+                        }));
+                        candlestickSeries.setData(globalCandles);
+                        
+                        // تحديث السعر الحالي من أحدث شمعة
+                        const latestClose = globalCandles[globalCandles.length - 1].close;
+                        lastLivePrice = latestClose;
+                        priceElement.innerText = `$${latestClose.toFixed(2)}`;
+                        
+                        chart.timeScale().setVisibleLogicalRange({
+                            from: globalCandles.length - 30,
+                            to: globalCandles.length - 1
+                        });
+                    }
                 }
-
-                candlestickSeries.setData(globalCandles);
-                chart.timeScale().setVisibleLogicalRange({
-                    from: globalCandles.length - 30,
-                    to: globalCandles.length - 1
-                });
             } catch (err) {}
         }
 
-        // دالة جلب السعر الفوري من سيرفر بايثون المحلي
-        async function fetchMT5LocalPrice() {
+        // دالة جلب السعر الفوري من الإنترنت مباشرة (تحديث كل ثانية)
+        async function fetchLivePrice() {
             try {
-                const res = await fetch('http://127.0.0.1:5000/price');
-                const data = await res.json();
+                const targetUrl = `https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSDT`;
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+                const res = await fetch(proxyUrl);
+                const wrapper = await res.json();
                 
-                if (data && data.price) {
-                    const rawPrice = parseFloat(data.price);
-                    if (lastLivePrice > 0) {
-                        priceElement.style.color = rawPrice > lastLivePrice ? '#22c55e' : (rawPrice < lastLivePrice ? '#ef4444' : '#3b82f6');
-                    }
-                    lastLivePrice = rawPrice;
-                    priceElement.innerText = `$${rawPrice.toFixed(2)}`;
+                if (wrapper && wrapper.contents) {
+                    const data = JSON.parse(wrapper.contents);
+                    if (data && data.retCode === 0 && data.result && data.result.list && data.result.list.length > 0) {
+                        const rawPrice = parseFloat(data.result.list[0].lastPrice);
+                        if (rawPrice > 0) {
+                            if (lastLivePrice > 0) {
+                                priceElement.style.color = rawPrice > lastLivePrice ? '#22c55e' : (rawPrice < lastLivePrice ? '#ef4444' : '#3b82f6');
+                            }
+                            lastLivePrice = rawPrice;
+                            priceElement.innerText = `$${rawPrice.toFixed(2)}`;
 
-                    if (globalCandles.length > 0) {
-                        analyzeMarket();
+                            if (globalCandles.length > 0) {
+                                analyzeMarket();
+                            }
+                        }
                     }
                 }
             } catch (err) {
-                console.error("Waiting for local Python server...", err);
+                console.error("Waiting for live network...", err);
             }
         }
 
@@ -521,7 +538,7 @@
             lockedSignalType = null;
             document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
             event.target.classList.add('active');
-            loadInitialChartData();
+            loadChartData();
         }
 
         function toggleEMA() {
@@ -536,11 +553,12 @@
             if (globalCandles.length > 0) analyzeMarket();
         }
 
-        loadInitialChartData();
-        fetchMT5LocalPrice();
+        loadChartData();
+        fetchLivePrice();
         
-        // التحديث المستمر كل ثانية من سيرفر بايثون المحلي
-        setInterval(fetchMT5LocalPrice, 1000); 
+        // تحديث السعر الفوري كل ثانية والشارت كل 10 ثواني
+        setInterval(fetchLivePrice, 1000); 
+        setInterval(loadChartData, 10000);  
     </script>
 </body>
 </html>
