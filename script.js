@@ -251,7 +251,6 @@ function analyzeMarket() {
     }
 
     vwapFilterVal.innerHTML = `<span dir="ltr">${activePrice >= currentVwap ? 'فوق VWAP' : 'تحت VWAP'}</span>`;
-    macdFilterVal.innerHTML = `<span dir="ltr">نبض فوري</span>`;
 
     candlestickSeries.update(globalCandles[globalCandles.length - 1]);
 
@@ -315,24 +314,35 @@ async function fetchLiveGoldPrice() {
 
     try {
         const res = await fetch(GOLD_SPOT_URL);
-        const json = await res.json();
 
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+        }
+
+        const json = await res.json();
         const rawPrice = json?.items?.[0]?.xauPrice;
 
-        if (rawPrice) {
-            if (lastLivePrice > 0) {
-                priceElement.style.color = rawPrice > lastLivePrice ? '#22c55e' : (rawPrice < lastLivePrice ? '#ef4444' : '#3b82f6');
-            }
-            lastLivePrice = rawPrice;
-            priceElement.innerText = `$${rawPrice.toFixed(2)}`;
+        if (!rawPrice) {
+            throw new Error('الرد مش فيه xauPrice - شكل البيانات تغيّر');
+        }
 
-            if (globalCandles.length === 0) {
-                loadChartData();
-            } else {
-                analyzeMarket();
-            }
+        if (lastLivePrice > 0) {
+            priceElement.style.color = rawPrice > lastLivePrice ? '#22c55e' : (rawPrice < lastLivePrice ? '#ef4444' : '#3b82f6');
+        }
+        lastLivePrice = rawPrice;
+        priceElement.innerText = `$${rawPrice.toFixed(2)}`;
+
+        const now = new Date();
+        macdFilterVal.innerHTML = `<span dir="ltr" style="color:#22c55e">✓ ${now.toLocaleTimeString('ar-EG')}</span>`;
+
+        if (globalCandles.length === 0) {
+            loadChartData();
+        } else {
+            analyzeMarket();
         }
     } catch (err) {
+        // نعرض الخطأ الحقيقي جوه الصفحة نفسها (مفيش حاجة تانية غيّرت السعر)
+        macdFilterVal.innerHTML = `<span dir="ltr" style="color:#ef4444">✗ ${err.message}</span>`;
         console.error('خطأ في جلب سعر السبوت اللحظي:', err);
     } finally {
         isFetchingPrice = false;
@@ -383,4 +393,3 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
-    
