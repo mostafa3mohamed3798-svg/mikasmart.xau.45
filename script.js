@@ -256,39 +256,36 @@ async function loadChartData() {
 }
 
 function generateFallbackData() {
-    let basePrice = 2350.0 + Math.random() * 10;
+    let basePrice = lastLivePrice > 0 ? lastLivePrice : 2365.0;
     let now = Math.floor(Date.now() / 1000) - (150 * 60);
     globalCandles = [];
     globalVolumes = [];
     
     for (let i = 0; i < 150; i++) {
-        let change = (Math.random() - 0.48) * 3;
+        let change = (Math.random() - 0.48) * 2;
         let open = basePrice;
         let close = open + change;
-        let high = Math.max(open, close) + Math.random() * 1.5;
-        let low = Math.min(open, close) - Math.random() * 1.5;
+        let high = Math.max(open, close) + Math.random() * 1.0;
+        let low = Math.min(open, close) - Math.random() * 1.0;
         
         globalCandles.push({ time: now + (i * 60), open, high, low, close });
         globalVolumes.push({ time: now + (i * 60), value: Math.random() * 1000 });
         basePrice = close;
     }
-    lastLivePrice = basePrice;
 }
 
 async function fetchLivePrice() {
     try {
-        const res = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSDT');
+        const res = await fetch('https://api.coinbase.com/v2/prices/PAXG-USD/spot');
         const data = await res.json();
-        
-        if (data && data.result && data.result.list && data.result.list.length > 0) {
-            const rawPrice = parseFloat(data.result.list[0].lastPrice);
-            
+        if (data && data.data && data.data.amount) {
+            const rawPrice = parseFloat(data.data.amount);
             if (lastLivePrice > 0) {
                 priceElement.style.color = rawPrice > lastLivePrice ? '#22c55e' : (rawPrice < lastLivePrice ? '#ef4444' : '#3b82f6');
             }
             lastLivePrice = rawPrice;
             priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-            statusElement.innerText = "● متصل بـ Bybit مباشر";
+            statusElement.innerText = "● متصل بسعر الذهب الفوري (PAXG)";
             statusElement.style.color = "#22c55e";
 
             if (globalCandles.length === 0) generateFallbackData();
@@ -297,7 +294,7 @@ async function fetchLivePrice() {
     } catch (err) {
         if (lastLivePrice === 0) lastLivePrice = 2365.50;
         priceElement.innerText = `$${lastLivePrice.toFixed(2)}`;
-        statusElement.innerText = "● يعمل وضع المحاكاة والتحليل المحلي";
+        statusElement.innerText = "● يعمل وضع التحليل المحلي المستقر";
         statusElement.style.color = "#eab308";
         analyzeMarket();
     }
