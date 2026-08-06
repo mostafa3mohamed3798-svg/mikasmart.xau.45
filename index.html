@@ -3,545 +3,288 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mika Pro Gold - Dynamic Momentum Engine</title>
-    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    <title>منصة مراقبة الأسواق والتحليل الفني - Live Market</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            background-color: #080c14; 
-            color: #fff; 
-            font-family: system-ui, -apple-system, sans-serif; 
-            padding: 10px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
+        :root {
+            --bg-color: #0b0e11;
+            --card-bg: #1e2329;
+            --accent-green: #0ecb81;
+            --accent-red: #f6465d;
+            --text-primary: #eaecef;
+            --text-secondary: #848e9c;
+            --border-color: #2b313a;
+            --primary-blue: #3861fb;
         }
-
-        .top-price-card { 
-            background: linear-gradient(145deg, #131b2e, #0a0f1d); 
-            border-radius: 14px; 
-            padding: 15px; 
-            width: 100%; 
-            max-width: 600px; 
-            text-align: center; 
-            border: 1px solid #1e293b; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4); 
-            margin-bottom: 10px; 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
-        .header-title { font-size: 1.1rem; font-weight: bold; color: #3b82f6; margin-bottom: 2px; }
-        .symbol-name { font-size: 0.8rem; color: #64748b; margin-bottom: 6px; }
-        
-        .price-display { 
-            font-size: 2.5rem; 
-            font-weight: 800; 
-            color: #3b82f6; 
-            letter-spacing: 0.5px; 
-            margin: 2px 0; 
-            line-height: 1; 
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            padding: 20px;
         }
-        .status-badge { font-size: 0.75rem; color: #22c55e; margin-top: 2px; font-weight: bold; }
-        
-        .signal-container { 
-            display: flex; 
-            justify-content: space-around; 
-            align-items: center; 
-            margin-top: 10px; 
-            padding-top: 10px; 
-            border-top: 1px solid #1e293b; 
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .signal-tag { 
-            padding: 5px 14px; 
-            border-radius: 20px; 
-            font-weight: bold; 
-            font-size: 0.9rem; 
-        }
-        .signal-wait { background-color: rgba(234, 179, 8, 0.15); color: #eab308; border: 1px solid #eab308; }
-        .signal-strong { background-color: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid #22c55e; }
-        .signal-strong-sell { background-color: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444; }
-
-        .targets-box {
-            display: flex;
-            justify-content: space-around;
-            width: 100%;
-            margin-top: 8px;
-            background: #0a0f1d;
-            padding: 8px;
-            border-radius: 6px;
-            border: 1px solid #1e293b;
-            font-size: 0.82rem;
-        }
-        .target-item span { color: #3b82f6; font-weight: bold; }
-
-        .trade-action-box {
-            width: 100%;
-            margin-top: 10px;
-        }
-        .execute-btn {
-            width: 100%;
-            color: #fff;
-            border: none;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .execute-btn.wait-active { background: #334155; color: #94a3b8; cursor: not-allowed; }
-        .execute-btn.strong-buy-active { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 3px 10px rgba(16, 185, 129, 0.4); }
-        .execute-btn.strong-sell-active { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 3px 10px rgba(239, 68, 68, 0.4); }
-
-        .filters-dashboard {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            width: 100%;
-            max-width: 600px;
-            margin-bottom: 10px;
-        }
-
-        .filter-card {
-            background: #131b2e;
-            border: 1px solid #1e293b;
-            padding: 8px;
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .filter-label { font-size: 0.68rem; color: #64748b; font-weight: 600; margin-bottom: 3px; }
-        .filter-value { font-size: 0.8rem; font-weight: bold; color: #f8fafc; }
-
-        .chart-card {
-            background: #131b2e; 
-            border-radius: 14px; 
-            padding: 10px; 
-            width: 100%; 
-            max-width: 600px; 
-            border: 1px solid #1e293b; 
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .chart-toolbar {
+        header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 6px;
-            background: #0a0f1d;
-            padding: 6px 10px;
-            border-radius: 8px;
-            border: 1px solid #1e293b;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
         }
-
-        .tf-group, .indicator-group { display: flex; gap: 4px; flex-wrap: wrap; }
-
-        .tf-btn, .indicator-btn {
-            background: #1e293b;
-            color: #94a3b8;
-            border: 1px solid #334155;
-            padding: 4px 8px;
-            border-radius: 5px;
-            font-size: 0.72rem;
-            font-weight: 600;
-            cursor: pointer;
+        .logo h1 {
+            font-size: 1.5rem;
+            color: var(--primary-blue);
         }
-
-        .tf-btn.active { background: #3b82f6; color: #080c14; border-color: #3b82f6; }
-        .btn-ema.active { background: rgba(59, 130, 246, 0.2); color: #3b82f6; border-color: #3b82f6; }
-        .btn-vwap.active { background: rgba(168, 85, 247, 0.2); color: #a855f7; border-color: #a855f7; }
-
-        .chart-container { 
-            width: 100%; 
-            height: 330px; 
+        .status-badge {
+            background-color: rgba(14, 203, 129, 0.1);
+            color: var(--accent-green);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border: 1px solid rgba(14, 203, 129, 0.3);
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 900px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        .price-display {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .price-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 10px;
+        }
+        .indicator-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+        .indicator-value {
+            font-weight: bold;
+        }
+        .chart-container {
             position: relative;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #000;
+            height: 400px;
+            width: 100%;
         }
-
-        #chart { width: 100%; height: 100%; }
+        .log-box {
+            background-color: #121418;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            height: 120px;
+            overflow-y: auto;
+            color: var(--text-secondary);
+        }
     </style>
 </head>
 <body>
 
-    <div class="top-price-card">
-        <div class="header-title">🛡️ Mika Dynamic Scalper - محرك الزخم المرن</div>
-        <div class="symbol-name">Bybit Futures - XAUUSDT</div>
-        
-        <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● تحديث فوري فائق السرعة (400ms)</div>
-        
-        <div class="signal-container">
-            <span id="signalTag" class="signal-tag signal-wait">⏳ بانتظار استقرار الزخم...</span>
-            <span class="signal-power">الحالة: <strong id="signalPower" style="color: #fff;">ترقب لحظي</strong></span>
+    <header>
+        <div class="logo">
+            <h1>Market Monitor Cloud</h1>
+            <p style="font-size: 0.8rem; color: var(--text-secondary);">متصل سحابياً (بدون حاجة لسيرفر محلي)</p>
         </div>
+        <div id="connection-status" class="status-badge">متصل بالشبكة</div>
+    </header>
 
-        <div class="targets-box">
-            <div class="target-item">وقف خسارة (SL): <span id="slVal">---</span></div>
-            <div class="target-item">هدف أول (TP1): <span id="tp1Val">---</span></div>
-            <div class="target-item">هدف ثاني (TP2): <span id="tp2Val">---</span></div>
-        </div>
+    <div class="dashboard-grid">
+        <!-- اليمين: معلومات السعر والفلترات -->
+        <div>
+            <div class="card">
+                <h3 id="symbol-name">XAUUSD (Gold)</h3>
+                <div class="price-display" id="current-price">--</div>
+                <div class="price-details">
+                    <span>Bid: <strong id="bid-price" style="color: var(--accent-red);">--</strong></span>
+                    <span>Ask: <strong id="ask-price" style="color: var(--accent-green);">--</strong></span>
+                </div>
+            </div>
 
-        <div class="trade-action-box">
-            <button id="executeBtn" class="execute-btn wait-active" onclick="executeOrder()">
-                ⏳ بانتظار استقرار الزخم
-            </button>
-        </div>
-    </div>
+            <div class="card">
+                <h3>المؤشرات الفنية (فلترات السوق)</h3>
+                <div class="indicator-row">
+                    <span>RSI (14):</span>
+                    <span id="rsi-val" class="indicator-value" style="color: #f0b90b;">--</span>
+                </div>
+                <div class="indicator-row">
+                    <span>EMA (50):</span>
+                    <span id="ema50-val" class="indicator-value">--</span>
+                </div>
+                <div class="indicator-row">
+                    <span>EMA (200):</span>
+                    <span id="ema200-val" class="indicator-value">--</span>
+                </div>
+                <div class="indicator-row">
+                    <span>الحالة الفنية:</span>
+                    <span id="signal-status" class="indicator-value" style="color: var(--accent-green);">نشط</span>
+                </div>
+            </div>
 
-    <div class="filters-dashboard">
-        <div class="filter-card">
-            <div class="filter-label">📊 VWAP FILTER</div>
-            <div id="vwapFilterVal" class="filter-value" style="color: #3b82f6;">--</div>
-        </div>
-        <div class="filter-card">
-            <div class="filter-label">⚡ SPEED ENGINE</div>
-            <div id="macdFilterVal" class="filter-value" style="color: #3b82f6;">--</div>
-        </div>
-        
-        <div class="filter-card" style="grid-column: span 2;">
-            <div class="filter-label" style="display: flex; justify-content: space-between;">
-                <span>🕯️ قوة الشمعة الحالية (Candle Power)</span>
-                <span id="candleTimer" style="color: #3b82f6;">--</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: bold; margin: 5px 0 3px 0;">
-                <span id="bullishPercentText" style="color: #22c55e;">صعود: 50%</span>
-                <span id="bearishPercentText" style="color: #ef4444;">هبوط: 50%</span>
-            </div>
-            <div style="width: 100%; background: #1e293b; height: 7px; border-radius: 4px; overflow: hidden; display: flex;">
-                <div id="bullishBar" style="width: 50%; background: #22c55e; transition: width 0.2s ease;"></div>
-                <div id="bearishBar" style="width: 50%; background: #ef4444; transition: width 0.2s ease;"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="chart-card">
-        <div class="chart-toolbar">
-            <div class="tf-group">
-                <button class="tf-btn active" onclick="changeTimeframe('1')">1m</button>
-                <button class="tf-btn" onclick="changeTimeframe('5')">5m</button>
-                <button class="tf-btn" onclick="changeTimeframe('15')">15m</button>
-            </div>
-            <div class="indicator-group">
-                <button id="emaToggle" class="indicator-btn btn-ema active" onclick="toggleEMA()">EMA</button>
-                <button id="vwapToggle" class="indicator-btn btn-vwap active" onclick="toggleVWAP()">VWAP</button>
+            <div class="card">
+                <h3>سجل الأحداث</h3>
+                <div class="log-box" id="log-box">
+                    [00:00:01] جاري تهيئة النظام السحابي...<br>
+                </div>
             </div>
         </div>
 
-        <div class="chart-container">
-            <div id="chart"></div>
+        <!-- اليسار: الشارت اللحظي -->
+        <div>
+            <div class="card" style="height: 100%;">
+                <h3>حركة السعر اللحظية (XAUUSD)</h3>
+                <div class="chart-container">
+                    <canvas id="marketChart"></canvas>
+                </div>
+            </div>
         </div>
     </div>
         <script>
-        const priceElement = document.getElementById('price');
-        const signalTagElement = document.getElementById('signalTag');
-        const signalPowerElement = document.getElementById('signalPower');
-        
-        const slValElement = document.getElementById('slVal');
-        const tp1ValElement = document.getElementById('tp1Val');
-        const tp2ValElement = document.getElementById('tp2Val');
-        const executeBtn = document.getElementById('executeBtn');
-
-        const vwapFilterVal = document.getElementById('vwapFilterVal');
-        const macdFilterVal = document.getElementById('macdFilterVal');
-        
-        const bullishPercentText = document.getElementById('bullishPercentText');
-        const bearishPercentText = document.getElementById('bearishPercentText');
-        const bullishBar = document.getElementById('bullishBar');
-        const bearishBar = document.getElementById('bearishBar');
-        const candleTimer = document.getElementById('candleTimer');
-        
-        let lastLivePrice = 0;
-        let currentTimeframe = '1';
-        let showEMAs = true;
-        let showVWAP = true;
-        let currentTradeSetup = null;
-
-        let globalCandles = [];
-        let globalVolumes = [];
-        
-        let lockedSignalType = null; 
-        let lockedCandleTime = null;
-
-        const chart = LightweightCharts.createChart(document.getElementById('chart'), {
-            layout: { backgroundColor: '#020408', textColor: '#94a3b8' },
-            grid: { vertLines: { color: 'rgba(30, 41, 59, 0.2)' }, horzLines: { color: 'rgba(30, 41, 59, 0.2)' } },
-            timeScale: { timeVisible: true, secondsVisible: false },
+        const ctx = document.getElementById('marketChart').getContext('2d');
+        const marketChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'XAUUSD Live Price',
+                    data: [],
+                    borderColor: '#3861fb',
+                    backgroundColor: 'rgba(56, 97, 251, 0.05)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { color: '#2b313a' }, ticks: { color: '#848e9c' } },
+                    y: { grid: { color: '#2b313a' }, ticks: { color: '#848e9c' } }
+                },
+                plugins: { legend: { labels: { color: '#eaecef' } } }
+            }
         });
 
-        const candlestickSeries = chart.addCandlestickSeries({
-            upColor: '#22c55e', downColor: '#ef4444', borderVisible: true,
-            borderUpColor: '#22c55e', borderDownColor: '#ef4444', wickUpColor: '#22c55e', wickDownColor: '#ef4444'
-        });
-
-        const ema50Series = chart.addLineSeries({ color: '#3b82f6', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
-        const ema200Series = chart.addLineSeries({ color: '#ec4899', lineWidth: 2.5, priceLineVisible: false, lastValueVisible: false });
-        const vwapSeries = chart.addLineSeries({ color: '#a855f7', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
-
-        function calculateEMA(candles, period) {
-            if (candles.length < period) return [];
-            let emaData = [];
-            const k = 2 / (period + 1);
-            let sum = 0;
-            for (let i = 0; i < period; i++) sum += candles[i].close;
-            let prevEMA = sum / period;
-            emaData.push({ time: candles[period - 1].time, value: prevEMA });
-            
-            for (let i = period; i < candles.length; i++) {
-                const close = candles[i].close;
-                prevEMA = (close * k) + (prevEMA * (1 - k));
-                emaData.push({ time: candles[i].time, value: prevEMA });
-            }
-            return emaData;
+        const logBox = document.getElementById('log-box');
+        function addLog(message) {
+            const timeStr = new Date().toLocaleTimeString();
+            logBox.innerHTML += `[${timeStr}] ${message}<br>`;
+            logBox.scrollTop = logBox.scrollHeight;
         }
 
-        function calculateVWAP(candles, volumes) {
-            if (candles.length === 0 || volumes.length === 0) return [];
-            let vwapData = [];
-            let cumulativeTPV = 0;
-            let cumulativeVolume = 0;
+        let priceHistory = [];
 
-            for (let i = 0; i < candles.length; i++) {
-                const typicalPrice = (candles[i].high + candles[i].low + candles[i].close) / 3;
-                const vol = volumes[i] ? volumes[i].value : 0;
-                cumulativeTPV += typicalPrice * vol;
-                cumulativeVolume += vol;
-                
-                const vwapVal = cumulativeVolume > 0 ? cumulativeTPV / cumulativeVolume : typicalPrice;
-                vwapData.push({ time: candles[i].time, value: vwapVal });
+        // حساب مؤشر RSI
+        function calculateRSI(prices, period = 14) {
+            if (prices.length < period + 1) return 50.00;
+            let gains = 0, losses = 0;
+            for (let i = prices.length - period; i < prices.length; i++) {
+                let diff = prices[i] - prices[i - 1];
+                if (diff >= 0) gains += diff;
+                else losses -= diff;
             }
-            return vwapData;
+            let avgGain = gains / period;
+            let avgLoss = losses / period;
+            if (avgLoss === 0) return 100.00;
+            let rs = avgGain / avgLoss;
+            return (100 - (100 / (1 + rs))).toFixed(2);
         }
 
-        function analyzeCurrentCandle(candles, activePrice) {
-            if (candles.length === 0) return { bullPct: 50, bearPct: 50 };
-            
-            let currentCandle = candles[candles.length - 1];
-            
-            if (activePrice > currentCandle.high) currentCandle.high = activePrice;
-            if (activePrice < currentCandle.low) currentCandle.low = activePrice;
-            currentCandle.close = activePrice;
-
-            const high = currentCandle.high;
-            const low = currentCandle.low;
-            const totalRange = high - low;
-            
-            if (totalRange <= 0) return { bullPct: 50, bearPct: 50, candleTime: currentCandle.time };
-
-            const distanceFromLow = activePrice - low;
-            let bullPct = (distanceFromLow / totalRange) * 100;
-            bullPct = Math.max(0, Math.min(100, bullPct));
-            let bearPct = 100 - bullPct;
-
-            bullishPercentText.innerText = `صعود: ${bullPct.toFixed(1)}%`;
-            bearishPercentText.innerText = `هبوط: ${bearPct.toFixed(1)}%`;
-            bullishBar.style.width = `${bullPct}%`;
-            bearishBar.style.width = `${bearPct}%`;
-
-            const tfMinutes = parseInt(currentTimeframe) || 1;
-            const now = Math.floor(Date.now() / 1000);
-            const elapsedSeconds = now - currentCandle.time;
-            const totalSeconds = tfMinutes * 60;
-            const remainingSeconds = Math.max(0, totalSeconds - elapsedSeconds);
-            
-            const remMin = Math.floor(remainingSeconds / 60);
-            const remSec = remainingSeconds % 60;
-            candleTimer.innerText = `إغلاق: ${remMin}:${remSec < 10 ? '0' : ''}${remSec}`;
-
-            return { bullPct, bearPct, candleTime: currentCandle.time };
+        // حساب مؤشر EMA
+        function calculateEMA(prices, period) {
+            if (prices.length < period) return prices[prices.length - 1];
+            let k = 2 / (period + 1);
+            let ema = prices[0];
+            for (let i = 1; i < prices.length; i++) {
+                ema = (prices[i] * k) + (ema * (1 - k));
+            }
+            return parseFloat(ema).toFixed(2);
         }
 
-        function analyzeMarket() {
-            if (globalCandles.length < 50 || lastLivePrice === 0) return;
-
-            const activePrice = lastLivePrice;
-            const candleInfo = analyzeCurrentCandle(globalCandles, activePrice);
-
-            const ema50Data = calculateEMA(globalCandles, 50);
-            const ema200Data = calculateEMA(globalCandles, 200);
-            const vwapData = calculateVWAP(globalCandles, globalVolumes);
-            const currentVwap = vwapData.length > 0 ? vwapData[vwapData.length - 1].value : activePrice;
-
-            if (lockedCandleTime !== candleInfo.candleTime) {
-                lockedSignalType = null;
-                lockedCandleTime = candleInfo.candleTime;
-            }
-
-            let signalType = lockedSignalType;
-
-            if (!signalType) {
-                if (candleInfo.bullPct >= 53) {
-                    signalType = 'BUY';
-                    lockedSignalType = 'BUY';
-                } else if (candleInfo.bearPct >= 53) {
-                    signalType = 'SELL';
-                    lockedSignalType = 'SELL';
-                }
-            }
-
-            // --- أهداف ديناميكية تتناسب مع طول الشمعة وزخمها الحالي ---
-            const currentCandleRange = globalCandles[globalCandles.length - 1].high - globalCandles[globalCandles.length - 1].low;
-            const dynamicTP = Math.max(2.5, currentCandleRange * 0.45); // TP مرن بحد أدنى 2.5$ ويزيد مع قوة الشمعة
-            const dynamicSL = Math.max(2.0, currentCandleRange * 0.5);  // SL يتناسب مع حركة الشمعة
-
-            if (signalType === 'BUY') {
-                const slPrice = activePrice - dynamicSL;
-                const tp1Price = activePrice + dynamicTP;
-                const tp2Price = activePrice + (dynamicTP * 1.8);
-
-                currentTradeSetup = { type: 'BUY', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
-                
-                signalTagElement.innerHTML = `🟢 شراء مؤكد وقوي (BUY)`;
-                signalTagElement.className = `signal-tag signal-strong`;
-                signalPowerElement.innerHTML = `<span dir="ltr">زخم صاعد قوي</span>`;
-
-                slValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.sl}</span>`;
-                tp1ValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.tp1}</span>`;
-                tp2ValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.tp2}</span>`;
-
-                executeBtn.className = `execute-btn strong-buy-active`;
-                executeBtn.innerHTML = `🚀 تنفيذ شراء (هدف ديناميكي $${dynamicTP.toFixed(1)}) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
-            } else if (signalType === 'SELL') {
-                const slPrice = activePrice + dynamicSL;
-                const tp1Price = activePrice - dynamicTP;
-                const tp2Price = activePrice - (dynamicTP * 1.8);
-
-                currentTradeSetup = { type: 'SELL', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
-                
-                signalTagElement.innerHTML = `🔴 بيع مؤكد وقوي (SELL)`;
-                signalTagElement.className = `signal-tag signal-strong-sell`;
-                signalPowerElement.innerHTML = `<span dir="ltr">زخم هابط قوي</span>`;
-
-                slValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.sl}</span>`;
-                tp1ValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.tp1}</span>`;
-                tp2ValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.tp2}</span>`;
-
-                executeBtn.className = `execute-btn strong-sell-active`;
-                executeBtn.innerHTML = `💥 تنفيذ بيع (هدف ديناميكي $${dynamicTP.toFixed(1)}) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
-            } else {
-                currentTradeSetup = null;
-                signalTagElement.innerHTML = `⏳ بانتظار استقرار الزخم...`;
-                signalTagElement.className = `signal-tag signal-wait`;
-                signalPowerElement.innerHTML = `<span dir="ltr">ترقب لحظي</span>`;
-
-                slValElement.innerHTML = `---`;
-                tp1ValElement.innerHTML = `---`;
-                tp2ValElement.innerHTML = `---`;
-
-                executeBtn.className = `execute-btn wait-active`;
-                executeBtn.innerHTML = `⏳ بانتظار استقرار الزخم`;
-            }
-
-            vwapFilterVal.innerHTML = `<span dir="ltr">${activePrice >= currentVwap ? 'فوق VWAP' : 'تحت VWAP'}</span>`;
-            macdFilterVal.innerHTML = `<span dir="ltr">نبض فوري (400ms)</span>`;
-
-            candlestickSeries.update(globalCandles[globalCandles.length - 1]);
-
-            if (showEMAs && ema50Data.length > 0) {
-                ema50Series.setData(ema50Data);
-                ema200Series.setData(ema200Data);
-            } else {
-                ema50Series.setData([]);
-                ema200Series.setData([]);
-            }
-
-            if (showVWAP && vwapData.length > 0) {
-                vwapSeries.setData(vwapData);
-            } else {
-                vwapSeries.setData([]);
-            }
-        }
-
-        function executeOrder() {
-            if (!currentTradeSetup) {
-                alert('⚠️ انتظر إشارة واضحة للتنفيذ.');
-                return;
-            }
-            alert(`✅ تم التنفيذ بنجاح!\nالنوع: ${currentTradeSetup.type}\nالدخول: $${currentTradeSetup.entry}\nالهدف الأول (TP1): $${currentTradeSetup.tp1}\nالهدف الثاني (TP2): $${currentTradeSetup.tp2}\nوقف الخسارة (SL): $${currentTradeSetup.sl}`);
-        }
-
-        async function loadChartData() {
+        // دالة سحب السعر وتحديث الشارت والمؤشرات
+        async function fetchMarketData() {
             try {
-                const res = await fetch(`https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${currentTimeframe}&limit=150`);
-                const data = await res.json();
-
-                if (data && data.retCode === 0 && data.result && data.result.list) {
-                    const list = data.result.list.reverse();
-                    globalCandles = list.map(d => ({
-                        time: parseInt(d[0]) / 1000,
-                        open: parseFloat(d[1]),
-                        high: parseFloat(d[2]),
-                        low: parseFloat(d[3]),
-                        close: parseFloat(d[4])
-                    }));
-
-                    globalVolumes = list.map(d => ({
-                        time: parseInt(d[0]) / 1000,
-                        value: parseFloat(d[5])
-                    }));
-
-                    candlestickSeries.setData(globalCandles);
-                    if (lastLivePrice > 0) analyzeMarket();
-
-                    chart.timeScale().setVisibleLogicalRange({
-                        from: globalCandles.length - 30,
-                        to: globalCandles.length - 1
-                    });
-                }
-            } catch (err) {}
-        }
-
-        async function fetchBybitPrice() {
-            try {
-                const res = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSDT');
-                const data = await res.json();
+                const response = await fetch('https://api.gold-api.com/price/XAU');
+                const data = await response.json();
                 
-                if (data && data.retCode === 0 && data.result && data.result.list.length > 0) {
-                    const rawPrice = parseFloat(data.result.list[0].lastPrice);
-                    if (lastLivePrice > 0) {
-                        priceElement.style.color = rawPrice > lastLivePrice ? '#22c55e' : (rawPrice < lastLivePrice ? '#ef4444' : '#3b82f6');
-                    }
-                    lastLivePrice = rawPrice;
-                    priceElement.innerText = `$${rawPrice.toFixed(2)}`;
+                if (data && data.price) {
+                    const basePrice = parseFloat(data.price);
+                    // محاكاة تقريبية لفارق Bid و Ask بشكل واقعي للذهب
+                    const bid = (basePrice - 0.25).toFixed(2);
+                    const ask = (basePrice + 0.25).toFixed(2);
+                    const midPrice = basePrice.toFixed(2);
 
-                    if (globalCandles.length > 0) {
-                        analyzeMarket();
+                    document.getElementById('current-price').innerText = midPrice;
+                    document.getElementById('bid-price').innerText = bid;
+                    document.getElementById('ask-price').innerText = ask;
+
+                    // تخزين السعر لتشغيل الفلاتر والمؤشرات
+                    priceHistory.push(parseFloat(midPrice));
+                    if (priceHistory.length > 250) priceHistory.shift();
+
+                    // تطبيق حسابات المؤشرات الفنية
+                    const rsiVal = calculateRSI(priceHistory, 14);
+                    const ema50Val = calculateEMA(priceHistory, 50);
+                    const ema200Val = calculateEMA(priceHistory, Math.min(priceHistory.length, 200));
+
+                    document.getElementById('rsi-val').innerText = rsiVal;
+                    document.getElementById('ema50-val').innerText = ema50Val;
+                    document.getElementById('ema200-val').innerText = ema200Val;
+
+                    // تحديث الشارت اللحظي
+                    const timeLabel = new Date().toLocaleTimeString();
+                    if (marketChart.data.labels.length > 30) {
+                        marketChart.data.labels.shift();
+                        marketChart.data.datasets[0].data.shift();
                     }
+                    marketChart.data.labels.push(timeLabel);
+                    marketChart.data.datasets[0].data.push(midPrice);
+                    marketChart.update('none');
+
+                    addLog(`تم تحديث الأسعار والمؤشرات بنجاح (السعر: ${midPrice})`);
                 }
-            } catch (err) {}
+            } catch (error) {
+                addLog("تعذر جلب التحديث اللحظي، جاري إعادة المحاولة...");
+                console.error(error);
+            }
         }
 
-        function changeTimeframe(tf) {
-            currentTimeframe = tf;
-            lockedSignalType = null;
-            document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-            loadChartData();
-        }
-
-        function toggleEMA() {
-            showEMAs = !showEMAs;
-            document.getElementById('emaToggle').classList.toggle('active', showEMAs);
-            if (globalCandles.length > 0) analyzeMarket();
-        }
-
-        function toggleVWAP() {
-            showVWAP = !showVWAP;
-            document.getElementById('vwapToggle').classList.toggle('active', showVWAP);
-            if (globalCandles.length > 0) analyzeMarket();
-        }
-
-        loadChartData();
-        fetchBybitPrice();
-        
-        setInterval(fetchBybitPrice, 400); 
-        setInterval(loadChartData, 10000);  
+        // جلب البيانات أول مرة ثم التحديث تلقائياً كل 5 ثوانٍ
+        fetchMarketData();
+        setInterval(fetchMarketData, 5000);
     </script>
 </body>
 </html>
