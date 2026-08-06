@@ -266,192 +266,215 @@
             <div id="chart"></div>
         </div>
     </div>
-    </div>
-               <script>
-    // كود الجافاسكريبت المدمج بالكامل هنا
-    let chart, candleSeries, emaSeries, vwapSeries;
-    let currentTF = '1m';
-    let showEMA = true;
-    let showVWAP = true;
-    let historicalData = [];
+        <script>
+        let chart, candleSeries, emaSeries, vwapSeries;
+        let currentTF = '1m';
+        let showEMA = true;
+        let showVWAP = true;
+        let historicalData = [];
 
-    function initChart() {
-        const chartElement = document.getElementById('chart');
-        chartElement.innerHTML = '';
-        
-        chart = LightweightCharts.createChart(chartElement, {
-            layout: {
-                background: { type: 'solid', color: '#0f172a' },
-                textColor: '#94a3b8',
-            },
-            grid: {
-                vertLines: { color: '#1e293b' },
-                horzLines: { color: '#1e293b' },
-            },
-            crosshair: {
-                mode: LightweightCharts.CrosshairMode.Normal,
-            },
-            rightPriceScale: {
-                borderColor: '#1e293b',
-            },
-            timeScale: {
-                borderColor: '#1e293b',
-                timeVisible: true,
-                secondsVisible: false,
-            },
-        });
+        function initChart() {
+            const chartElement = document.getElementById('chart');
+            chartElement.innerHTML = '';
+            
+            chart = LightweightCharts.createChart(chartElement, {
+                layout: {
+                    background: { type: 'solid', color: '#0f172a' },
+                    textColor: '#94a3b8',
+                },
+                grid: {
+                    vertLines: { color: '#1e293b' },
+                    horzLines: { color: '#1e293b' },
+                },
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Normal,
+                },
+                rightPriceScale: {
+                    borderColor: '#1e293b',
+                },
+                timeScale: {
+                    borderColor: '#1e293b',
+                    timeVisible: true,
+                    secondsVisible: false,
+                },
+            });
 
-        candleSeries = chart.addCandlestickSeries({
-            upColor: '#22c55e',
-            downColor: '#ef4444',
-            borderVisible: false,
-            wickUpColor: '#22c55e',
-            wickDownColor: '#ef4444',
-        });
+            candleSeries = chart.addCandlestickSeries({
+                upColor: '#22c55e',
+                downColor: '#ef4444',
+                borderVisible: false,
+                wickUpColor: '#22c55e',
+                wickDownColor: '#ef4444',
+            });
 
-        if (showEMA) {
-            emaSeries = chart.addLineSeries({ color: '#3b82f6', lineWidth: 2 });
+            if (showEMA) {
+                emaSeries = chart.addLineSeries({ color: '#3b82f6', lineWidth: 2 });
+            }
+            if (showVWAP) {
+                vwapSeries = chart.addLineSeries({ color: '#eab308', lineWidth: 2 });
+            }
+
+            window.addEventListener('resize', () => {
+                chart.applyOptions({ width: chartElement.clientWidth, height: chartElement.clientHeight });
+            });
         }
-        if (showVWAP) {
-            vwapSeries = chart.addLineSeries({ color: '#eab308', lineWidth: 2 });
+
+        function changeTimeframe(tf, event) {
+            document.querySelectorAll('.tf-btn').forEach(btn => btn.classList.remove('active'));
+            if (event && event.target) event.target.classList.add('active');
+            currentTF = tf;
+            fetchKlines();
         }
 
-        window.addEventListener('resize', () => {
-            chart.applyOptions({ width: chartElement.clientWidth, height: chartElement.clientHeight });
-        });
-    }
-
-    function changeTimeframe(tf, event) {
-        document.querySelectorAll('.tf-btn').forEach(btn => btn.classList.remove('active'));
-        if (event && event.target) event.target.classList.add('active');
-        currentTF = tf;
-        fetchKlines();
-    }
-
-    function toggleEMA() {
-        showEMA = !showEMA;
-        const btn = document.getElementById('emaToggle');
-        btn.classList.toggle('active', showEMA);
-        initChart();
-        updateChartData();
-    }
-
-    function toggleVWAP() {
-        showVWAP = !showVWAP;
-        const btn = document.getElementById('vwapToggle');
-        btn.classList.toggle('active', showVWAP);
-        initChart();
-        updateChartData();
-    }
-
-    async function fetchKlines() {
-    try {
-        let interval = '1';
-        if (currentTF === '5m') interval = '5';
-        if (currentTF === '15m') interval = '15';
-        if (currentTF === '4h') interval = '240';
-
-        const response = await fetch(`https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${interval}&limit=200`);
-        const data = await response.json();
-
-        if (data && data.result && data.result.list) {
-            historicalData = data.result.list.reverse().map(item => ({
-                time: parseInt(item[0]) / 1000,
-                open: parseFloat(item[1]),
-                high: parseFloat(item[2]),
-                low: parseFloat(item[3]),
-                close: parseFloat(item[4]),
-                volume: parseFloat(item[5])
-            }));
-
-            applyIndicatorsToUI(historicalData);
+        function toggleEMA() {
+            showEMA = !showEMA;
+            const btn = document.getElementById('emaToggle');
+            btn.classList.toggle('active', showEMA);
+            initChart();
             updateChartData();
         }
-    } catch (e) {
-        console.error("خطأ في جلب البيانات:", e);
-    }
-}
 
-    }
-
-    function updateChartData() {
-        if (!historicalData.length) return;
-        candleSeries.setData(historicalData);
-
-        if (showEMA && emaSeries) {
-            const emaData = calculateEMA(historicalData, 9);
-            emaSeries.setData(emaData);
-        }
-        if (showVWAP && vwapSeries) {
-            const vwapData = calculateVWAP(historicalData);
-            vwapSeries.setData(vwapData);
+        function toggleVWAP() {
+            showVWAP = !showVWAP;
+            const btn = document.getElementById('vwapToggle');
+            btn.classList.toggle('active', showVWAP);
+            initChart();
+            updateChartData();
         }
 
-        // تحديث الحسابات والواجهة
-        const latest = historicalData[historicalData.length - 1];
-        document.getElementById('price').innerText = latest.close.toFixed(2);
-        
-        // محاكاة الفلاتر والإشارات بناءً على البيانات
-        document.getElementById('vwapFilterVal').innerText = latest.close > (latest.open) ? 'إيجابي (Bullish)' : 'سلبي (Bearish)';
-        document.getElementById('macdFilterVal').innerText = 'مستقر ⚡';
-        
-        // تحديث شريط قوة الشمعة
-        const diff = latest.close - latest.open;
-        const pct = diff >= 0 ? 65 : 35;
-        document.getElementById('bullishPercentText').innerText = `صعود: ${pct}%`;
-        document.getElementById('bearishPercentText').innerText = `هبوط: ${100 - pct}%`;
-        document.getElementById('bullishBar').style.width = `${pct}%`;
-        document.getElementById('bearishBar').style.width = `${100 - pct}%`;
+        async function fetchKlines() {
+            try {
+                let interval = '1';
+                if (currentTF === '5m') interval = '5';
+                if (currentTF === '15m') interval = '15';
+                if (currentTF === '4h') interval = '240';
 
-        // الأهداف ووقف الخسارة
-        document.getElementById('slVal').innerText = (latest.close - 3.5).toFixed(2);
-        document.getElementById('tp1Val').innerText = (latest.close + 4.0).toFixed(2);
-        document.getElementById('tp2Val').innerText = (latest.close + 8.5).toFixed(2);
-    }
+                const response = await fetch(`https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${interval}&limit=200`);
+                const data = await response.json();
 
-    function calculateEMA(data, period) {
-        let results = [];
-        let multiplier = 2 / (period + 1);
-        let ema = data[0].close;
-        for (let i = 0; i < data.length; i++) {
-            if (i === 0) {
-                ema = data[0].close;
-            } else {
-                ema = (data[i].close - ema) * multiplier + ema;
+                if (data && data.result && data.result.list) {
+                    historicalData = data.result.list.reverse().map(item => ({
+                        time: parseInt(item[0]) / 1000,
+                        open: parseFloat(item[1]),
+                        high: parseFloat(item[2]),
+                        low: parseFloat(item[3]),
+                        close: parseFloat(item[4]),
+                        volume: parseFloat(item[5])
+                    }));
+
+                    applyIndicatorsToUI(historicalData);
+                    updateChartData();
+                }
+            } catch (e) {
+                console.error("خطأ في جلب البيانات:", e);
             }
-            results.push({ time: data[i].time, value: ema });
         }
-        return results;
-    }
 
-    function calculateVWAP(data) {
-        let results = [];
-        let cumulativeTPV = 0;
-        let cumulativeVolume = 0;
-        for (let i = 0; i < data.length; i++) {
-            let typicalPrice = (data[i].high + data[i].low + data[i].close) / 3;
-            cumulativeTPV += typicalPrice * data[i].volume;
-            cumulativeVolume += data[i].volume;
-            let vwap = cumulativeVolume === 0 ? typicalPrice : cumulativeTPV / cumulativeVolume;
-            results.push({ time: data[i].time, value: vwap });
+        function updateChartData() {
+            if (!historicalData.length) return;
+            candleSeries.setData(historicalData);
+
+            if (showEMA && emaSeries) {
+                const emaData = calculateEMA(historicalData, 9);
+                emaSeries.setData(emaData);
+            }
+            if (showVWAP && vwapSeries) {
+                const vwapData = calculateVWAP(historicalData);
+                vwapSeries.setData(vwapData);
+            }
         }
-        return results;
-    }
 
-    function executeOrder() {
-        alert("تم إرسال أمر التداول بنجاح!");
-    }
+        function applyIndicatorsToUI(data) {
+            if (!data || data.length === 0) return;
 
-    // تشغيل الشارت وجلب البيانات عند فتح الصفحة
-    initChart();
-    fetchKlines();
-                   // تحديث المؤشرات مع كل جلب بيانات جديد
-if (typeof historicalData !== 'undefined') {
-    applyIndicatorsToUI(historicalData);
-}
+            const latest = data[data.length - 1];
+            document.getElementById('price').innerText = latest.close.toFixed(2);
+            
+            const isBullish = latest.close >= latest.open; 
+
+            const signalTag = document.getElementById('signalTag');
+            const signalPower = document.getElementById('signalPower');
+            const executeBtn = document.getElementById('executeBtn');
+
+            const slVal = document.getElementById('slVal');
+            const tp1Val = document.getElementById('tp1Val');
+            const tp2Val = document.getElementById('tp2Val');
+
+            document.getElementById('vwapFilterVal').innerText = isBullish ? 'إيجابي (Bullish)' : 'سلبي (Bearish)';
+            document.getElementById('macdFilterVal').innerText = 'مستقر ⚡';
+            
+            const diff = latest.close - latest.open;
+            const pct = isBullish ? 65 : 35;
+            document.getElementById('bullishPercentText').innerText = `صعود: ${pct}%`;
+            document.getElementById('bearishPercentText').innerText = `هبوط: ${100 - pct}%`;
+            document.getElementById('bullishBar').style.width = `${pct}%`;
+            document.getElementById('bearishBar').style.width = `${100 - pct}%`;
+
+            if (isBullish) {
+                signalTag.className = "signal-tag signal-strong";
+                signalTag.innerText = "🚀 إشارة شراء قوية (BUY)";
+                signalPower.innerText = "صعودي مؤكد";
+                signalPower.style.color = "#22c55e";
+
+                executeBtn.className = "execute-btn strong-buy-active";
+                executeBtn.innerText = "🚀 تنفيذ صفقة شراء (BUY)";
+
+                slVal.innerText = (latest.close - 3.5).toFixed(2);
+                tp1Val.innerText = (latest.close + 4.0).toFixed(2);
+                tp2Val.innerText = (latest.close + 8.5).toFixed(2);
+            } else {
+                signalTag.className = "signal-tag signal-strong-sell";
+                signalTag.innerText = "🔻 إشارة بيع قوية (SELL)";
+                signalPower.innerText = "هبوطي مؤكد";
+                signalPower.style.color = "#ef4444";
+
+                executeBtn.className = "execute-btn strong-sell-active";
+                executeBtn.innerText = "🔻 تنفيذ صفقة بيع (SELL)";
+
+                slVal.innerText = (latest.close + 3.5).toFixed(2);
+                tp1Val.innerText = (latest.close - 4.0).toFixed(2);
+                tp2Val.innerText = (latest.close - 8.5).toFixed(2);
+            }
+        }
+
+        function calculateEMA(data, period) {
+            let results = [];
+            let multiplier = 2 / (period + 1);
+            let ema = data[0].close;
+            for (let i = 0; i < data.length; i++) {
+                if (i === 0) {
+                    ema = data[0].close;
+                } else {
+                    ema = (data[i].close - ema) * multiplier + ema;
+                }
+                results.push({ time: data[i].time, value: ema });
+            }
+            return results;
+        }
+
+        function calculateVWAP(data) {
+            let results = [];
+            let cumulativeTPV = 0;
+            let cumulativeVolume = 0;
+            for (let i = 0; i < data.length; i++) {
+                let typicalPrice = (data[i].high + data[i].low + data[i].close) / 3;
+                cumulativeTPV += typicalPrice * data[i].volume;
+                cumulativeVolume += data[i].volume;
+                let vwap = cumulativeVolume === 0 ? typicalPrice : cumulativeTPV / cumulativeVolume;
+                results.push({ time: data[i].time, value: vwap });
+            }
+            return results;
+        }
+
+        function executeOrder() {
+            alert("تم إرسال أمر التداول بنجاح!");
+        }
+
+        initChart();
+        fetchKlines();
                    
-    setInterval(fetchKlines, 5000); // تحديث كل 5 ثواني
-</script>
+        setInterval(fetchKlines, 5000);
+    </script>
     <script src="indicators.js"></script>
 </body>
 </html>
