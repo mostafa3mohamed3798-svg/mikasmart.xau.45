@@ -345,30 +345,33 @@
     }
 
     async function fetchKlines() {
-        try {
-            let interval = '1';
-            if (currentTF === '5m') interval = '5';
-            if (currentTF === '15m') interval = '15';
-            if (currentTF === '4h') interval = '240';
+    try {
+        let interval = '1';
+        if (currentTF === '5m') interval = '5';
+        if (currentTF === '15m') interval = '15';
+        if (currentTF === '4h') interval = '240';
 
-            const response = await fetch(`https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${interval}&limit=100`);
-            const data = await response.json();
-            
-            if (data && data.result && data.result.list) {
-                historicalData = data.result.list.reverse().map(item => ({
-                    time: parseInt(item[0]) / 1000,
-                    open: parseFloat(item[1]),
-                    high: parseFloat(item[2]),
-                    low: parseFloat(item[3]),
-                    close: parseFloat(item[4]),
-                    volume: parseFloat(item[5])
-                }));
+        const response = await fetch(`https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${interval}&limit=200`);
+        const data = await response.json();
 
-                updateChartData();
-            }
-        } catch (e) {
-            console.error("خطأ في جلب الشموع:", e);
+        if (data && data.result && data.result.list) {
+            historicalData = data.result.list.reverse().map(item => ({
+                time: parseInt(item[0]) / 1000,
+                open: parseFloat(item[1]),
+                high: parseFloat(item[2]),
+                low: parseFloat(item[3]),
+                close: parseFloat(item[4]),
+                volume: parseFloat(item[5])
+            }));
+
+            applyIndicatorsToUI(historicalData);
+            updateChartData();
         }
+    } catch (e) {
+        console.error("خطأ في جلب البيانات:", e);
+    }
+}
+
     }
 
     function updateChartData() {
