@@ -158,7 +158,7 @@
 
         .chart-container { 
             width: 100%; 
-            height: 380px; /* زيادة الطرف قليلاً لتوضيح الشموع */
+            height: 380px; 
             position: relative;
             border-radius: 8px;
             overflow: hidden;
@@ -489,7 +489,6 @@
                     candlestickSeries.setData(globalCandles);
                     if (lastLivePrice > 0) analyzeMarket();
 
-                    // عرض عدد أقل من الشموع لتكون واضحة وكبيرة مثل الشارت الاحترافي
                     chart.timeScale().setVisibleLogicalRange({
                         from: globalCandles.length - 20,
                         to: globalCandles.length - 1
