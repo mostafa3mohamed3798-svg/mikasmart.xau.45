@@ -174,8 +174,8 @@
         <div class="header-title">🛡️ Mika Dynamic Scalper - محرك الزخم المرن</div>
         <div class="symbol-name">Bybit CFD - XAUUSD</div>
         
-        <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● تحديث فوري فائق السرعة (400ms)</div>
+        <div id="price" class="price-display">جاري الاتصال بالسيرفر...</div>
+        <div id="status" class="status-badge">● بانتظار استجابة البيانات</div>
         
         <div class="signal-container">
             <span id="signalTag" class="signal-tag signal-wait">⏳ بانتظار استقرار الزخم...</span>
@@ -241,6 +241,7 @@
     </div>
         <script>
         const priceElement = document.getElementById('price');
+        const statusElement = document.getElementById('status');
         const signalTagElement = document.getElementById('signalTag');
         const signalPowerElement = document.getElementById('signalPower');
         
@@ -494,7 +495,9 @@
                         to: globalCandles.length - 1
                     });
                 }
-            } catch (err) {}
+            } catch (err) {
+                console.error("خطأ في جلب الشموع:", err);
+            }
         }
 
         async function fetchBybitPrice() {
@@ -509,12 +512,18 @@
                     }
                     lastLivePrice = rawPrice;
                     priceElement.innerText = `$${rawPrice.toFixed(2)}`;
+                    statusElement.innerText = "● متصل ويحدث لحظياً (400ms)";
+                    statusElement.style.color = "#22c55e";
 
                     if (globalCandles.length > 0) {
                         analyzeMarket();
                     }
                 }
-            } catch (err) {}
+            } catch (err) {
+                priceElement.innerText = "فشل الاتصال";
+                statusElement.innerText = "● تأكد من تشغيل سيرفر محلي (Live Server)";
+                statusElement.style.color = "#ef4444";
+            }
         }
 
         function changeTimeframe(tf) {
