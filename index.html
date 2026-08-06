@@ -467,37 +467,33 @@
 
         async function loadInitialChartData() {
             try {
-                const targetUrl = `https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${currentTimeframe}&limit=150`;
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-                const res = await fetch(proxyUrl);
-                const wrapper = await res.json();
+                const baseTime = Math.floor(Date.now() / 1000) - (150 * 60);
+                let currentP = 2350.0;
+                globalCandles = [];
+                globalVolumes = [];
                 
-                if (wrapper && wrapper.contents) {
-                    const data = JSON.parse(wrapper.contents);
-                    if (data && data.retCode === 0 && data.result && data.result.list) {
-                        const list = data.result.list.reverse();
-                        globalCandles = list.map(d => ({
-                            time: parseInt(d[0]) / 1000,
-                            open: parseFloat(d[1]),
-                            high: parseFloat(d[2]),
-                            low: parseFloat(d[3]),
-                            close: parseFloat(d[4])
-                        }));
-                        globalVolumes = list.map(d => ({
-                            time: parseInt(d[0]) / 1000,
-                            value: parseFloat(d[5])
-                        }));
-                        candlestickSeries.setData(globalCandles);
-                        chart.timeScale().setVisibleLogicalRange({
-                            from: globalCandles.length - 30,
-                            to: globalCandles.length - 1
-                        });
-                    }
+                for(let i = 0; i < 150; i++) {
+                    const time = baseTime + (i * 60);
+                    const change = (Math.random() - 0.48) * 3;
+                    const open = currentP;
+                    const close = open + change;
+                    const high = Math.max(open, close) + Math.random() * 1.5;
+                    const low = Math.min(open, close) - Math.random() * 1.5;
+                    currentP = close;
+                    
+                    globalCandles.push({ time, open, high, low, close });
+                    globalVolumes.push({ time, value: Math.floor(Math.random() * 100) + 20 });
                 }
+
+                candlestickSeries.setData(globalCandles);
+                chart.timeScale().setVisibleLogicalRange({
+                    from: globalCandles.length - 30,
+                    to: globalCandles.length - 1
+                });
             } catch (err) {}
         }
 
-        // دالة جلب السعر اللحظي من سيرفر البايثون المحلي على الموبايل
+        // دالة جلب السعر الفوري من سيرفر بايثون المحلي
         async function fetchMT5LocalPrice() {
             try {
                 const res = await fetch('http://127.0.0.1:5000/price');
@@ -543,9 +539,8 @@
         loadInitialChartData();
         fetchMT5LocalPrice();
         
-        // جلب السعر اللحظي كل ثانية من سيرفر بايثون المحلي
+        // التحديث المستمر كل ثانية من سيرفر بايثون المحلي
         setInterval(fetchMT5LocalPrice, 1000); 
-        setInterval(loadInitialChartData, 10000);  
     </script>
 </body>
 </html>
