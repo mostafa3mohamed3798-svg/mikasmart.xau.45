@@ -153,8 +153,7 @@
         }
 
         .tf-btn.active { background: #3b82f6; color: #080c14; border-color: #3b82f6; }
-        .btn-ema.active { background: rgba(59, 130, 246, 0.2); color: #3b82f6; border-color: #3b82f6; }
-        .btn-vwap.active { background: rgba(168, 85, 247, 0.2); color: #a855f7; border-color: #a855f7; }
+        .indicator-btn.active { background: rgba(59, 130, 246, 0.2); color: #3b82f6; border-color: #3b82f6; }
 
         .chart-container { 
             width: 100%; 
@@ -171,11 +170,11 @@
 <body>
 
     <div class="top-price-card">
-        <div class="header-title">🛡️ Mika Gold - True Futures Engine</div>
-        <div class="symbol-name">Binance Futures - XAUUSDT (سعر الفيوتشر العالمي الحقيقي)</div>
+        <div class="header-title">🛡️ Mika Pro Gold - True Futures Engine</div>
+        <div class="symbol-name">Bybit Linear - XAUUSDT (سعر الفيوتشر العالمي الحقيقي)[span_1](start_span)[span_1](end_span)</div>
         
         <div id="price" class="price-display">جاري التحميل...</div>
-        <div id="status" class="status-badge">● متصل بسعر الفيوتشر المباشر</div>
+        <div id="status" class="status-badge">● متصل بسعر Bybit المباشر[span_2](start_span)[span_2](end_span)</div>
         
         <div class="signal-container">
             <span id="signalTag" class="signal-tag signal-wait">⏳ بانتظار استقرار الزخم...</span>
@@ -224,13 +223,14 @@
     <div class="chart-card">
         <div class="chart-toolbar">
             <div class="tf-group">
-                <button class="tf-btn active" onclick="changeTimeframe('1m')">1m</button>
-                <button class="tf-btn" onclick="changeTimeframe('5m')">5m</button>
-                <button class="tf-btn" onclick="changeTimeframe('15m')">15m</button>
+                <button class="tf-btn active" onclick="changeTimeframe('1m', event)">1m</button>
+                <button class="tf-btn" onclick="changeTimeframe('5m', event)">5m</button>
+                <button class="tf-btn" onclick="changeTimeframe('15m', event)">15m</button>
+                <button class="tf-btn" onclick="changeTimeframe('4h', event)">4h</button>
             </div>
             <div class="indicator-group">
-                <button id="emaToggle" class="indicator-btn btn-ema active" onclick="toggleEMA()">EMA</button>
-                <button id="vwapToggle" class="indicator-btn btn-vwap active" onclick="toggleVWAP()">VWAP</button>
+                <button id="emaToggle" class="indicator-btn active" onclick="toggleEMA()">EMA</button>
+                <button id="vwapToggle" class="indicator-btn active" onclick="toggleVWAP()">VWAP</button>
             </div>
         </div>
 
