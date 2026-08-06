@@ -155,7 +155,7 @@ function analyzeMarket() {
 
         currentTradeSetup = { type: 'BUY (Futures)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
         
-        signalTagElement.innerHTML = `🟢 شراء عقود آجل (Futures Buy)`;
+        signalTagElement.innerHTML = `🟢 شراء عقود فيوتشر (Futures Buy)`;
         signalTagElement.className = `signal-tag signal-strong`;
         signalPowerElement.innerHTML = `<span dir="ltr">زخم صاعد قوي</span>`;
 
@@ -172,7 +172,7 @@ function analyzeMarket() {
 
         currentTradeSetup = { type: 'SELL (Futures)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
         
-        signalTagElement.innerHTML = `🔴 بيع عقود آجل (Futures Sell)`;
+        signalTagElement.innerHTML = `🔴 بيع عقود فيوتشر (Futures Sell)`;
         signalTagElement.className = `signal-tag signal-strong-sell`;
         signalPowerElement.innerHTML = `<span dir="ltr">زخم هابط قوي</span>`;
 
@@ -226,8 +226,8 @@ function executeOrder() {
 
 async function loadChartData() {
     try {
-        // تم ضبط الـ category على linear الخاصة بالفيوتشر والرمز XAUUSDT[span_2](start_span)[span_2](end_span)
-        const res = await fetch(`https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUUSDT&interval=${currentTimeframe}&limit=150`);
+        // جلب الشموع لعقود الفيوتشر الحقيقية للذهب XAUTUSDT عبر category=linear
+        const res = await fetch(`https://api.bybit.com/v5/market/kline?category=linear&symbol=XAUTUSDT&interval=${currentTimeframe}&limit=150`);
         const data = await res.json();
 
         if (data && data.retCode === 0 && data.result && data.result.list) {
@@ -260,8 +260,8 @@ async function loadChartData() {
 
 async function fetchBybitPrice() {
     try {
-        // جلب سعر الفيوتشر المباشر لزوج الذهب[span_3](start_span)[span_3](end_span)
-        const res = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSDT');
+        // جلب السعر المباشر للفيوتشر الحقيقي للذهب XAUTUSDT عبر category=linear
+        const res = await fetch('https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUTUSDT');
         const data = await res.json();
         
         if (data && data.retCode === 0 && data.result && data.result.list.length > 0) {
