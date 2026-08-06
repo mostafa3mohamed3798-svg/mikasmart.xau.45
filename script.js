@@ -1,5 +1,4 @@
 const priceElement = document.getElementById('price');
-const statusElement = document.getElementById('status');
 const signalTagElement = document.getElementById('signalTag');
 const signalPowerElement = document.getElementById('signalPower');
 
@@ -146,17 +145,17 @@ function analyzeMarket() {
     }
 
     const currentCandleRange = globalCandles[globalCandles.length - 1].high - globalCandles[globalCandles.length - 1].low;
-    const dynamicTP = Math.max(2.5, currentCandleRange * 0.45);
-    const dynamicSL = Math.max(2.0, currentCandleRange * 0.5);
+    const dynamicTP = Math.max(2.5, currentCandleRange * 0.45); 
+    const dynamicSL = Math.max(2.0, currentCandleRange * 0.5);  
 
     if (signalType === 'BUY') {
         const slPrice = activePrice - dynamicSL;
         const tp1Price = activePrice + dynamicTP;
         const tp2Price = activePrice + (dynamicTP * 1.8);
 
-        currentTradeSetup = { type: 'BUY', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
+        currentTradeSetup = { type: 'BUY (Spot)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
         
-        signalTagElement.innerHTML = `🟢 شراء مؤكد وقوي (BUY)`;
+        signalTagElement.innerHTML = `🟢 شراء فوري (Spot Buy)`;
         signalTagElement.className = `signal-tag signal-strong`;
         signalPowerElement.innerHTML = `<span dir="ltr">زخم صاعد قوي</span>`;
 
@@ -165,15 +164,15 @@ function analyzeMarket() {
         tp2ValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.tp2}</span>`;
 
         executeBtn.className = `execute-btn strong-buy-active`;
-        executeBtn.innerHTML = `🚀 تنفيذ شراء (هدف ديناميكي $${dynamicTP.toFixed(1)}) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
+        executeBtn.innerHTML = `🚀 شراء XAUT فوري (هدف $${dynamicTP.toFixed(1)}) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
     } else if (signalType === 'SELL') {
         const slPrice = activePrice + dynamicSL;
         const tp1Price = activePrice - dynamicTP;
         const tp2Price = activePrice - (dynamicTP * 1.8);
 
-        currentTradeSetup = { type: 'SELL', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
+        currentTradeSetup = { type: 'SELL (Spot)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
         
-        signalTagElement.innerHTML = `🔴 بيع مؤكد وقوي (SELL)`;
+        signalTagElement.innerHTML = `🔴 بيع فوري (Spot Sell)`;
         signalTagElement.className = `signal-tag signal-strong-sell`;
         signalPowerElement.innerHTML = `<span dir="ltr">زخم هابط قوي</span>`;
 
@@ -182,7 +181,7 @@ function analyzeMarket() {
         tp2ValElement.innerHTML = `<span dir="ltr">$${currentTradeSetup.tp2}</span>`;
 
         executeBtn.className = `execute-btn strong-sell-active`;
-        executeBtn.innerHTML = `💥 تنفيذ بيع (هدف ديناميكي $${dynamicTP.toFixed(1)}) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
+        executeBtn.innerHTML = `💥 بيع XAUT فوري (هدف $${dynamicTP.toFixed(1)}) - سعر <span dir="ltr">${activePrice.toFixed(2)}</span>`;
     } else {
         currentTradeSetup = null;
         signalTagElement.innerHTML = `⏳ بانتظار استقرار الزخم...`;
@@ -222,82 +221,58 @@ function executeOrder() {
         alert('⚠️ انتظر إشارة واضحة للتنفيذ.');
         return;
     }
-    alert(`✅ تم التنفيذ بنجاح!\nالنوع: ${currentTradeSetup.type}\nالدخول: $${currentTradeSetup.entry}\nالهدف الأول (TP1): $${currentTradeSetup.tp1}\nالهدف الثاني (TP2): $${currentTradeSetup.tp2}\nوقف الخسارة (SL): $${currentTradeSetup.sl}`);
+    alert(`✅ تنفيذ صفقة فوري (Spot):\nالنوع: ${currentTradeSetup.type}\nالدخول: $${currentTradeSetup.entry}\nالهدف الأول: $${currentTradeSetup.tp1}\nالهدف الثاني: $${currentTradeSetup.tp2}\nوقف الخسارة: $${currentTradeSetup.sl}`);
 }
 
 async function loadChartData() {
     try {
-        const res = await fetch(`https://api.coincap.io/v2/candles?exchange=binance&interval=m${currentTimeframe}&baseAsset=tether&quoteAsset=gold`);
-        const json = await res.json();
-        
-        if (json && json.data && json.data.length > 0) {
-            globalCandles = json.data.map(d => ({
-                time: Math.floor(d.period / 1000),
-                open: parseFloat(d.open),
-                high: parseFloat(d.high),
-                low: parseFloat(d.low),
-                close: parseFloat(d.close)
-            }));
-            globalVolumes = json.data.map(d => ({
-                time: Math.floor(d.period / 1000),
-                value: parseFloat(d.volume)
-            }));
-        } else {
-            generateFallbackData();
-        }
-    } catch (e) {
-        generateFallbackData();
-    }
-    
-    if (globalCandles.length > 0) {
-        candlestickSeries.setData(globalCandles);
-        chart.timeScale().fitContent();
-    }
-}
-
-function generateFallbackData() {
-    let basePrice = lastLivePrice > 0 ? lastLivePrice : 2365.0;
-    let now = Math.floor(Date.now() / 1000) - (150 * 60);
-    globalCandles = [];
-    globalVolumes = [];
-    
-    for (let i = 0; i < 150; i++) {
-        let change = (Math.random() - 0.48) * 2;
-        let open = basePrice;
-        let close = open + change;
-        let high = Math.max(open, close) + Math.random() * 1.0;
-        let low = Math.min(open, close) - Math.random() * 1.0;
-        
-        globalCandles.push({ time: now + (i * 60), open, high, low, close });
-        globalVolumes.push({ time: now + (i * 60), value: Math.random() * 1000 });
-        basePrice = close;
-    }
-}
-
-async function fetchLivePrice() {
-    try {
-        const res = await fetch('https://api.coinbase.com/v2/prices/PAXG-USD/spot');
+        const res = await fetch(`https://api.bybit.com/v5/market/kline?category=spot&symbol=XAUTUSDT&interval=${currentTimeframe}&limit=150`);
         const data = await res.json();
-        if (data && data.data && data.data.amount) {
-            const rawPrice = parseFloat(data.data.amount);
+
+        if (data && data.retCode === 0 && data.result && data.result.list) {
+            const list = data.result.list.reverse();
+            globalCandles = list.map(d => ({
+                time: parseInt(d[0]) / 1000,
+                open: parseFloat(d[1]),
+                high: parseFloat(d[2]),
+                low: parseFloat(d[3]),
+                close: parseFloat(d[4])
+            }));
+
+            globalVolumes = list.map(d => ({
+                time: parseInt(d[0]) / 1000,
+                value: parseFloat(d[5])
+            }));
+
+            candlestickSeries.setData(globalCandles);
+            if (lastLivePrice > 0) analyzeMarket();
+
+            chart.timeScale().setVisibleLogicalRange({
+                from: globalCandles.length - 30,
+                to: globalCandles.length - 1
+            });
+        }
+    } catch (err) {}
+}
+
+async function fetchBybitPrice() {
+    try {
+        const res = await fetch('https://api.bybit.com/v5/market/tickers?category=spot&symbol=XAUTUSDT');
+        const data = await res.json();
+        
+        if (data && data.retCode === 0 && data.result && data.result.list.length > 0) {
+            const rawPrice = parseFloat(data.result.list[0].lastPrice);
             if (lastLivePrice > 0) {
                 priceElement.style.color = rawPrice > lastLivePrice ? '#22c55e' : (rawPrice < lastLivePrice ? '#ef4444' : '#3b82f6');
             }
             lastLivePrice = rawPrice;
             priceElement.innerText = `$${rawPrice.toFixed(2)}`;
-            statusElement.innerText = "● متصل بسعر الذهب الفوري (PAXG)";
-            statusElement.style.color = "#22c55e";
 
-            if (globalCandles.length === 0) generateFallbackData();
-            analyzeMarket();
+            if (globalCandles.length > 0) {
+                analyzeMarket();
+            }
         }
-    } catch (err) {
-        if (lastLivePrice === 0) lastLivePrice = 2365.50;
-        priceElement.innerText = `$${lastLivePrice.toFixed(2)}`;
-        statusElement.innerText = "● يعمل وضع التحليل المحلي المستقر";
-        statusElement.style.color = "#eab308";
-        analyzeMarket();
-    }
+    } catch (err) {}
 }
 
 function changeTimeframe(tf) {
@@ -321,7 +296,7 @@ function toggleVWAP() {
 }
 
 loadChartData();
-fetchLivePrice();
+fetchBybitPrice();
 
-setInterval(fetchLivePrice, 2000); 
+setInterval(fetchBybitPrice, 400); 
 setInterval(loadChartData, 10000);
