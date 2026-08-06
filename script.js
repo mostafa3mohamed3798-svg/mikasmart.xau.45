@@ -252,7 +252,9 @@ async function loadChartData() {
                 to: globalCandles.length - 1
             });
         }
-    } catch (err) {}
+    } catch (err) {
+        console.error("Error loading chart data:", err);
+    }
 }
 
 async function fetchBybitPrice() {
@@ -272,7 +274,9 @@ async function fetchBybitPrice() {
                 analyzeMarket();
             }
         }
-    } catch (err) {}
+    } catch (err) {
+        console.error("Error fetching live price:", err);
+    }
 }
 
 function changeTimeframe(tf) {
