@@ -39,7 +39,8 @@ const TF_CONFIG = {
     '15m': { seconds: 900 },
 };
 
-const GOLD_SPOT_URL = 'https://data-asg.goldprice.org/dbXRates/USD';
+// رابط سحب السعر اللحظي من Bybit V5 Public API لعقود الـ Linear (XAUUSDT)
+const GOLD_SPOT_URL = 'https://api.bybit.com/v5/market/tickers?category=linear&symbol=XAUUSDT';
 
 function getTfSeconds() {
     return TF_CONFIG[currentTimeframe].seconds;
@@ -95,6 +96,9 @@ function calculateVWAP(candles, volumes) {
     return vwapData;
 }
 
+// -------------------------------------------------------------------------
+// تحليل الشمعة الحالية + التعامل مع فتح شمعة جديدة عند بداية فريم جديد
+// -------------------------------------------------------------------------
 function updateCurrentCandle(activePrice) {
     const tfSeconds = getTfSeconds();
     const now = Math.floor(Date.now() / 1000);
@@ -103,6 +107,7 @@ function updateCurrentCandle(activePrice) {
     let currentCandle = globalCandles[globalCandles.length - 1];
 
     if (!currentCandle || currentCandle.time !== periodStart) {
+        // فريم زمني جديد بدأ -> اقفل الشمعة القديمة وافتح شمعة جديدة حقيقية
         currentCandle = {
             time: periodStart,
             open: activePrice,
@@ -113,11 +118,13 @@ function updateCurrentCandle(activePrice) {
         globalCandles.push(currentCandle);
         globalVolumes.push({ time: periodStart, value: 0 });
 
+        // حافظ على حجم معقول للتاريخ المعروض
         if (globalCandles.length > 500) {
             globalCandles.shift();
             globalVolumes.shift();
         }
 
+        // شمعة جديدة = لازم نعيد فتح قفل الإشارة
         lockedSignalType = null;
     } else {
         if (activePrice > currentCandle.high) currentCandle.high = activePrice;
@@ -199,9 +206,9 @@ function analyzeMarket() {
         const tp1Price = activePrice + dynamicTP;
         const tp2Price = activePrice + (dynamicTP * 1.8);
 
-        currentTradeSetup = { type: 'BUY (XAUUSD Spot)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
+        currentTradeSetup = { type: 'BUY (Bybit XAUUSDT)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
 
-        signalTagElement.innerHTML = `🟢 شراء ذهب (XAU Spot Buy)`;
+        signalTagElement.innerHTML = `🟢 شراء ذهب (Bybit Buy)`;
         signalTagElement.className = `signal-tag signal-strong`;
         signalPowerElement.innerHTML = `<span dir="ltr">زخم صاعد قوي</span>`;
 
@@ -216,9 +223,9 @@ function analyzeMarket() {
         const tp1Price = activePrice - dynamicTP;
         const tp2Price = activePrice - (dynamicTP * 1.8);
 
-        currentTradeSetup = { type: 'SELL (XAUUSD Spot)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
+        currentTradeSetup = { type: 'SELL (Bybit XAUUSDT)', entry: activePrice.toFixed(2), sl: slPrice.toFixed(2), tp1: tp1Price.toFixed(2), tp2: tp2Price.toFixed(2) };
 
-        signalTagElement.innerHTML = `🔴 بيع ذهب (XAU Spot Sell)`;
+        signalTagElement.innerHTML = `🔴 بيع ذهب (Bybit Sell)`;
         signalTagElement.className = `signal-tag signal-strong-sell`;
         signalPowerElement.innerHTML = `<span dir="ltr">زخم هابط قوي</span>`;
 
@@ -291,6 +298,9 @@ function loadChartData() {
     }
 }
 
+// -------------------------------------------------------------------------
+// دالة جلب السعر المباشر متوافقة تماماً مع Bybit V5 API
+// -------------------------------------------------------------------------
 async function fetchLiveGoldPrice() {
     if (isFetchingPrice) return;
     isFetchingPrice = true;
@@ -303,10 +313,10 @@ async function fetchLiveGoldPrice() {
         }
 
         const json = await res.json();
-        const rawPrice = json?.items?.[0]?.xauPrice;
+        const rawPrice = parseFloat(json?.result?.list?.[0]?.lastPrice);
 
-        if (!rawPrice) {
-            throw new Error('الرد مش فيه xauPrice - شكل البيانات تغيّر');
+        if (!rawPrice || isNaN(rawPrice)) {
+            throw new Error('لم يتم العثور على السعر من Bybit');
         }
 
         if (lastLivePrice > 0) {
@@ -316,7 +326,7 @@ async function fetchLiveGoldPrice() {
         priceElement.innerText = `$${rawPrice.toFixed(2)}`;
 
         const now = new Date();
-        macdFilterVal.innerHTML = `<span dir="ltr" style="color:#22c55e">✓ ${now.toLocaleTimeString('ar-EG')}</span>`;
+        macdFilterVal.innerHTML = `<span dir="ltr" style="color:#22c55e">✓ Bybit: ${now.toLocaleTimeString('ar-EG')}</span>`;
 
         if (globalCandles.length === 0) {
             loadChartData();
@@ -325,12 +335,15 @@ async function fetchLiveGoldPrice() {
         }
     } catch (err) {
         macdFilterVal.innerHTML = `<span dir="ltr" style="color:#ef4444">✗ ${err.message}</span>`;
-        console.error('خطأ في جلب سعر السبوت اللحظي:', err);
+        console.error('خطأ في جلب سعر Bybit اللحظي:', err);
     } finally {
         isFetchingPrice = false;
     }
 }
 
+// -------------------------------------------------------------------------
+// أدوات التحكم بالواجهة
+// -------------------------------------------------------------------------
 function changeTimeframe(tf, evt) {
     currentTimeframe = tf;
     lockedSignalType = null;
@@ -355,6 +368,9 @@ function toggleVWAP() {
     if (globalCandles.length > 0) analyzeMarket();
 }
 
+// -------------------------------------------------------------------------
+// التشغيل
+// -------------------------------------------------------------------------
 loadChartData();
 fetchLiveGoldPrice();
 setInterval(fetchLiveGoldPrice, 3000);
@@ -364,3 +380,4 @@ document.addEventListener('visibilitychange', () => {
         fetchLiveGoldPrice();
     }
 });
+            
