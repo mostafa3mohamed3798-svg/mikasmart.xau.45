@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mika Pro Gold - True Futures Engine</title>
-<!-- استدعاء ملف المؤشرات الخارجية -->
-<script src="indicators.js"></script>
 <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+<!-- استدعاء ملف المؤشرات الخارجي -->
+<script src="indicators.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -215,7 +215,7 @@ body {
     </div>
     <div class="filter-card" style="grid-column: span 2;">
         <div class="filter-label" style="display: flex; justify-content: space-between;">
-            <span>قوة الشمعة الحالية (Candle Power)</span>
+            <span>قوة الشمعة والحالة (Trend Power)</span>
             <span id="candleTimer" style="color: #3b82f6;">--</span>
         </div>
         <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: bold; margin: 6px 0 4px 0;">
@@ -256,7 +256,6 @@ let historicalData = [];
 
 function initChart() {
     const chartElement = document.getElementById('chart');
-    chartElement.innerHTML = '';
     chart = LightweightCharts.createChart(chartElement, {
         layout: {
             background: { type: 'solid', color: '#0f172a' },
@@ -287,12 +286,8 @@ function initChart() {
         wickDownColor: '#ef4444',
     });
 
-    if (showEMA) {
-        emaSeries = chart.addLineSeries({ color: '#3b82f6', lineWidth: 2 });
-    }
-    if (showVWAP) {
-        vwapSeries = chart.addLineSeries({ color: '#eab308', lineWidth: 2 });
-    }
+    emaSeries = chart.addLineSeries({ color: '#3b82f6', lineWidth: 2 });
+    vwapSeries = chart.addLineSeries({ color: '#eab308', lineWidth: 2 });
 
     window.addEventListener('resize', () => {
         chart.applyOptions({ width: chartElement.clientWidth, height: chartElement.clientHeight });
@@ -310,16 +305,18 @@ function toggleEMA() {
     showEMA = !showEMA;
     const btn = document.getElementById('emaToggle');
     btn.classList.toggle('active', showEMA);
-    initChart();
-    updateChartData();
+    if (emaSeries) {
+        emaSeries.applyOptions({ visible: showEMA });
+    }
 }
 
 function toggleVWAP() {
     showVWAP = !showVWAP;
     const btn = document.getElementById('vwapToggle');
     btn.classList.toggle('active', showVWAP);
-    initChart();
-    updateChartData();
+    if (vwapSeries) {
+        vwapSeries.applyOptions({ visible: showVWAP });
+    }
 }
 
 async function fetchKlines() {
@@ -342,10 +339,18 @@ async function fetchKlines() {
                 volume: parseFloat(item[5])
             }));
         }
-        applyIndicatorsToUI(historicalData);
         updateChartData();
+        
+        // استخدام محرك TA الاحترافي المتكامل
+        if (typeof TA !== "undefined") {
+            const proResult = TA.generateProSignal(historicalData);
+            TA.applyProSignalToUI(proResult);
+            updateUIFromProSignal(proResult);
+        } else {
+            console.error("ملاحظة: ملف indicators.js غير مرتبط بشكل صحيح أو لم يتم تحميله.");
+        }
     } catch (e) {
-        console.error("خطأ في جلب البيانات");
+        console.error("خطأ في جلب البيانات", e);
     }
 }
 
@@ -353,59 +358,87 @@ function updateChartData() {
     if (!historicalData.length) return;
     candleSeries.setData(historicalData);
     
-    if (showEMA && emaSeries) {
-        const emaData = calculateEMA(historicalData, 9);
-        emaSeries.setData(emaData);
-    }
-    if (showVWAP && vwapSeries) {
-        const vwapData = calculateVWAP(historicalData);
-        vwapSeries.setData(vwapData);
+    if (typeof TA !== "undefined") {
+        if (emaSeries) {
+            const emaValues = TA.calculateMovingAverages(historicalData, 20, 50).emaFast;
+            const emaFormatted = historicalData.map((d, i) => ({ time: d.time, value: emaValues[i] })).filter(d => d.value !== null);
+            emaSeries.setData(emaFormatted);
+            emaSeries.applyOptions({ visible: showEMA });
+        }
+        if (vwapSeries) {
+            const vwapValues = TA.calculateVWAP(historicalData);
+            const vwapFormatted = historicalData.map((d, i) => ({ time: d.time, value: vwapValues[i] })).filter(d => d.value !== null);
+            vwapSeries.setData(vwapFormatted);
+            vwapSeries.applyOptions({ visible: showVWAP });
+        }
+
+        // استدعاء شامل لجميع المؤشرات المتاحة في ملف indicators.js وتخزينها/طباعتها
+        const atrArr = TA.calculateATR(historicalData);
+        const rsiArr = TA.calculateRSI(historicalData);
+        const macdObj = TA.calculateMACD(historicalData);
+        const bollinger = TA.calculateBollingerBands(historicalData);
+        const stochastic = TA.calculateStochastic(historicalData);
+        const adxObj = TA.calculateADX(historicalData);
+        const fibLevels = TA.calculateFibonacciLevels(historicalData);
+        const supportRes = TA.calculateSupportResistance(historicalData);
+        const volumeInd = TA.calculateVolumeIndicators(historicalData);
+        const ema200Arr = TA.calculateEMA200(historicalData);
+        const marketStruct = TA.detectMarketStructure(historicalData);
+        const orderBlocks = TA.detectOrderBlocks(historicalData, marketStruct.recentEvents, atrArr);
+        const fvgZones = TA.detectFVG(historicalData);
+        const liquiditySweeps = TA.detectLiquiditySweep(historicalData);
+        const eqHighsLows = TA.detectEqualHighsLows(historicalData);
+        const cvdArr = TA.calculateCVD(historicalData);
+        const volumeProfile = TA.calculateVolumeProfile(historicalData);
+        const candlestickPattern = TA.detectCandlestickPattern(historicalData);
+        const isVolAbnormal = TA.isVolatilityAbnormal(historicalData);
+        const activeSession = TA.getActiveSession(last(historicalData)?.time);
+
+        // طباعة تقرير مفصل لجميع المؤشرات المستدعاة في وحدة التحكم (Console)
+        console.log("=== تقرير المؤشرات الشامل من TA ===");
+        console.log("RSI:", rsiArr[rsiArr.length - 1]);
+        console.log("ATR:", atrArr[atrArr.length - 1]);
+        console.log("MACD Hist:", macdObj.hist[macdObj.hist.length - 1]);
+        console.log("Bollinger %B:", bollinger.percentB[bollinger.percentB.length - 1]);
+        console.log("Stochastic K/D:", stochastic.k[stochastic.k.length - 1], stochastic.d[stochastic.d.length - 1]);
+        console.log("ADX:", adxObj.adx[adxObj.adx.length - 1]);
+        console.log("Support & Resistance:", supportRes);
+        console.log("Fibonacci Levels:", fibLevels);
+        console.log("Market Structure Trend:", marketStruct.trend);
+        console.log("Order Blocks Active:", orderBlocks.length);
+        console.log("FVG Zones Active:", fvgZones.length);
+        console.log("Liquidity Sweeps:", liquiditySweeps.length);
+        console.log("Equal Highs/Lows:", eqHighsLows);
+        console.log("Volume Profile POC:", volumeProfile.poc);
+        console.log("Candlestick Pattern:", candlestickPattern);
+        console.log("Active Session:", activeSession);
+        console.log("Abnormal Volatility:", isVolAbnormal);
+        console.log("==================================");
     }
 }
 
-function applyIndicatorsToUI(data) {
-    if (!data || data.length === 0) return;
-    const latest = data[data.length - 1];
-    document.getElementById('price').innerText = latest.close.toFixed(2);
+// دالة مساعدة للحصول على العنصر الأخير في المصفوفة
+function last(arr) {
+    return arr && arr.length ? arr[arr.length - 1] : null;
+}
+
+function updateUIFromProSignal(result) {
+    if (!result) return;
+    document.getElementById('price').innerText = result.price.toFixed(2);
+    document.getElementById('vwapFilterVal').innerText = result.marketStructureTrend ? result.marketStructureTrend.toUpperCase() : 'NEUTRAL';
+    document.getElementById('macdFilterVal').innerText = `RSI: ${result.rsi} | ADX: ${result.adx}`;
     
-    const isBullish = latest.close >= latest.open;
-    const signalTag = document.getElementById('signalTag');
-    const signalPower = document.getElementById('signalPower');
-    const executeBtn = document.getElementById('executeBtn');
-    const slVal = document.getElementById('slVal');
-    const tp1Val = document.getElementById('tp1Val');
-    const tp2Val = document.getElementById('tp2Val');
+    const score = result.score || 50;
+    const isBuy = result.direction === "BUY";
+    const isSell = result.direction === "SELL";
     
-    document.getElementById('vwapFilterVal').innerText = isBullish ? 'إيجابي (Bullish)' : 'سلبي (Bearish)';
-    document.getElementById('macdFilterVal').innerText = 'مستقر';
+    let bullishPct = isBuy ? score : (isSell ? (100 - score) : 50);
+    if (isSell) bullishPct = 100 - score;
     
-    const pct = isBullish ? 65 : 35;
-    document.getElementById('bullishPercentText').innerText = `${pct}% صعود`;
-    document.getElementById('bearishPercentText').innerText = `${100 - pct}% هبوط`;
-    document.getElementById('bullishBar').style.width = `${pct}%`;
-    document.getElementById('bearishBar').style.width = `${100 - pct}%`;
-    
-    if (isBullish) {
-        signalTag.className = "signal-tag signal-strong";
-        signalTag.innerText = "إشارة شراء قوية (BUY)";
-        signalPower.innerText = "صعودي مؤكد";
-        signalPower.style.color = "#22c55e";
-        executeBtn.className = "execute-btn strong-buy-active";
-        executeBtn.innerText = "تنفيذ صفقة شراء (BUY)";
-        slVal.innerText = (latest.close - 3.5).toFixed(2);
-        tp1Val.innerText = (latest.close + 4.0).toFixed(2);
-        tp2Val.innerText = (latest.close + 8.5).toFixed(2);
-    } else {
-        signalTag.className = "signal-tag signal-strong-sell";
-        signalTag.innerText = "إشارة بيع قوية (SELL)";
-        signalPower.innerText = "هبوطي مؤكد";
-        signalPower.style.color = "#ef4444";
-        executeBtn.className = "execute-btn strong-sell-active";
-        executeBtn.innerText = "تنفيذ صفقة بيع (SELL)";
-        slVal.innerText = (latest.close + 3.5).toFixed(2);
-        tp1Val.innerText = (latest.close - 4.0).toFixed(2);
-        tp2Val.innerText = (latest.close - 8.5).toFixed(2);
-    }
+    document.getElementById('bullishPercentText').innerText = `${bullishPct.toFixed(0)}% صعود`;
+    document.getElementById('bearishPercentText').innerText = `${(100 - bullishPct).toFixed(0)}% هبوط`;
+    document.getElementById('bullishBar').style.width = `${bullishPct}%`;
+    document.getElementById('bearishBar').style.width = `${100 - bullishPct}%`;
 }
 
 function executeOrder() {
