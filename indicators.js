@@ -257,4 +257,9 @@ function generateProSignal(data, htfData = null, newsTimes = [], structureWindow
 }
 
 })(typeof window !== "undefined" ? window : globalThis);
-              
+// تصدير الدوال لتصبح متاحة لصفحة HTML
+window.TA = {
+    calculateEMA: calculateEMA,
+    calculateVWAP: calculateVWAP
+};
+
